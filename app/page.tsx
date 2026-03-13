@@ -464,10 +464,6 @@ export default function Home() {
   const [burnout, setBurnout] = React.useState(7);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
-  const [burnoutDriver, setBurnoutDriver] =
-    React.useState<BurnoutDriver>("Not sure");
-  const [age, setAge] = React.useState<number | "">("");
-
   const parsedSavings = typeof savings === "number" ? savings : parseFloat(savings || "0");
   const parsedExpenses = typeof expenses === "number" ? expenses : parseFloat(expenses || "0");
   const parsedSeverance = typeof severance === "number" ? severance : parseFloat(severance || "0");
@@ -500,7 +496,7 @@ export default function Home() {
   const nextSteps = getNextSteps(recommendedPath, archetype);
   const strategy = getStrategy(recommendedPath);
   const careerTrajectory = getCareerTrajectory(satisfaction, growth);
-  const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
+  const burnoutDriverInsight = getBurnoutDriverInsight("Not sure");
   const decisionConfidence = getDecisionConfidence(
     archetype,
     financialRisk,
@@ -508,8 +504,8 @@ export default function Home() {
     recommendedPath,
     runway
   );
-  const normalizationParagraph = getNormalizationParagraph(age);
-  const careerTimingPerspective = getCareerTimingPerspective(age);
+  const normalizationParagraph = getNormalizationParagraph("");
+  const careerTimingPerspective = getCareerTimingPerspective("");
 
   const whyParts: string[] = [situationSummary];
   if (burnoutDriverInsight) whyParts.push(burnoutDriverInsight);
@@ -722,48 +718,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Age
-              </label>
-              <input
-                type="number"
-                min={18}
-                max={100}
-                value={age}
-                onChange={(e) =>
-                  setAge(e.target.value === "" ? "" : Number(e.target.value))
-                }
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                placeholder="Your age"
-              />
-              <p className="text-xs text-gray-400">
-                Used to provide a career timing perspective based on your stage.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                What is driving your burnout the most?
-              </label>
-              <select
-                value={burnoutDriver}
-                onChange={(e) =>
-                  setBurnoutDriver(e.target.value as BurnoutDriver)
-                }
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-              >
-                <option value="Not sure">Not sure</option>
-                <option value="Workload / hours">Workload / hours</option>
-                <option value="Lack of meaning">Lack of meaning</option>
-                <option value="Toxic culture">Toxic culture</option>
-                <option value="Lack of growth">Lack of growth</option>
-                <option value="Compensation mismatch">Compensation mismatch</option>
-              </select>
-              <p className="text-xs text-gray-400">
-                This shapes how the tool interprets your burnout and suggests next moves.
-              </p>
-            </div>
           </div>
 
           {hasFinancialInputs ? (
