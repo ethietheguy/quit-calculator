@@ -336,8 +336,14 @@ function getArchetypeExplanation(archetype: Archetype): string {
   }
 }
 
-function getNextSteps(path: RecommendedPath, archetype: Archetype): string[] {
+function getNextSteps(path: RecommendedPath, archetype: Archetype, runway?: number): string[] {
   if (path === "Consider taking a break or quitting") {
+    if (runway !== undefined && runway > 14) {
+      return [
+        `You have ${runway.toFixed(1)} months of runway. Money isn't your constraint right now — clarity is.`,
+      ];
+    }
+
     if (archetype === "Burned-Out Achiever") {
       return [
         "Name the specific ways achievement has been running your life and what a healthier version would look like.",
@@ -461,15 +467,21 @@ export default function Home() {
   const [savings, setSavings] = React.useState<number | "">("");
   const [expenses, setExpenses] = React.useState<number | "">("");
   const [severance, setSeverance] = React.useState<number | "">("");
-  const [burnout, setBurnout] = React.useState(7);
+  const [income, setIncome] = React.useState<number | "">("");
+  const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
   const parsedSavings = typeof savings === "number" ? savings : parseFloat(savings || "0");
   const parsedExpenses = typeof expenses === "number" ? expenses : parseFloat(expenses || "0");
   const parsedSeverance = typeof severance === "number" ? severance : parseFloat(severance || "0");
+  const parsedIncome = typeof income === "number" ? income : parseFloat(income || "0");
 
   const runway =
     parsedExpenses > 0 ? (parsedSavings + parsedSeverance) / parsedExpenses : 0;
+
+  const monthlySurplus = parsedIncome - parsedExpenses;
+  const runwayStay3 = parsedExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 3) / parsedExpenses : 0;
+  const runwayStay6 = parsedExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 6) / parsedExpenses : 0;
 
   const burnoutScore =
     (burnout + (10 - satisfaction) + (10 - growth)) / 3;
@@ -493,7 +505,7 @@ export default function Home() {
     recommendedPath,
     archetype
   );
-  const nextSteps = getNextSteps(recommendedPath, archetype);
+  const nextSteps = getNextSteps(recommendedPath, archetype, runway);
   const strategy = getStrategy(recommendedPath);
   const careerTrajectory = getCareerTrajectory(satisfaction, growth);
   const burnoutDriverInsight = getBurnoutDriverInsight("Not sure");
@@ -545,6 +557,15 @@ export default function Home() {
       ? "text-amber-600"
       : "text-emerald-600";
 
+  const scenarioColors = (months: number) =>
+    !months || !Number.isFinite(months)
+      ? "text-zinc-900"
+      : months > 18
+      ? "text-emerald-600"
+      : months >= 6
+      ? "text-amber-600"
+      : "text-rose-600";
+
   const [copied, setCopied] = React.useState(false);
 
   const handleShareProfile = async () => {
@@ -579,7 +600,7 @@ export default function Home() {
       <main className="w-full max-w-4xl rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-zinc-200 backdrop-blur-sm sm:p-7">
         <header className="mb-7 text-center sm:mb-8">
           <h1 className="text-3xl font-light tracking-tight text-zinc-900 sm:text-4xl">
-            The Exit Calculator
+            The Quit Calculator
           </h1>
           <p className="mt-2 text-sm text-zinc-600 sm:text-base">
             A clear-eyed look at your finances, burnout, and next move.
@@ -629,6 +650,28 @@ export default function Home() {
               </div>
               <p className="text-xs text-gray-400">
                 Use an honest average of the bills you truly need to cover each month.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-800">
+                Monthly take-home pay
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
+                  $
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
+                  placeholder="e.g. 6,200"
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                Your net monthly income after taxes and deductions.
               </p>
             </div>
 
@@ -795,6 +838,44 @@ export default function Home() {
 
               <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                  Scenarios
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      Quit now
+                    </p>
+                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runway)}`}>
+                      {runway ? runway.toFixed(1) : "—"}
+                    </p>
+                    <p className="text-xs text-gray-400">months</p>
+                  </div>
+                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      Stay 3 mo.
+                    </p>
+                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runwayStay3)}`}>
+                      {runwayStay3 ? runwayStay3.toFixed(1) : "—"}
+                    </p>
+                    <p className="text-xs text-gray-400">months</p>
+                  </div>
+                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      Stay 6 mo.
+                    </p>
+                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runwayStay6)}`}>
+                      {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
+                    </p>
+                    <p className="text-xs text-gray-400">months</p>
+                  </div>
+                </div>
+                <p className="text-[11px] leading-relaxed text-gray-400">
+                  Assumes you save the difference between income and costs each month.
+                </p>
+              </section>
+
+              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
                   Career trajectory
                 </h3>
                 <p className="text-xs font-medium text-zinc-800">
@@ -853,6 +934,14 @@ export default function Home() {
                 insurance, dependents, or the job market. Use it as one input alongside people you
                 trust, your own judgement, and, if needed, professional advice.
               </p>
+
+              <button
+                type="button"
+                onClick={handleShareProfile}
+                className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-800"
+              >
+                Share my result
+              </button>
             </aside>
           ) : (
             <aside className="sticky top-8 flex items-center justify-center self-start rounded-2xl bg-zinc-50/80 p-4 text-center ring-1 ring-zinc-200 sm:p-5">
