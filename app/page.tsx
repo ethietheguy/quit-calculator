@@ -658,9 +658,9 @@ export default function Home() {
       <main className="mx-auto w-full max-w-2xl space-y-6">
 
         {/* ── Header ── */}
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight text-white">Quit Calculator</h1>
-          <p className="mt-1 text-sm text-slate-400">Should you quit? Let&apos;s find out.</p>
+        <header className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Quit Calculator</h1>
+          <p className="mt-1.5 text-sm text-slate-400">Should you quit? Let&apos;s find out.</p>
         </header>
 
         {/* ── Card 1: How you're feeling ── */}
