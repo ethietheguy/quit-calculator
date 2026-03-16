@@ -730,6 +730,19 @@ export default function Home() {
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // Sticky runway: track when the runway section scrolls out of view
+  const [runwayVisible, setRunwayVisible] = React.useState(true);
+  const observerRef = React.useRef<IntersectionObserver | null>(null);
+  const runwayRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) observerRef.current.disconnect();
+    if (!node) return;
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => setRunwayVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observerRef.current.observe(node);
+  }, []);
+
   const inputClass = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-8 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
   const inputClassNoDollar = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
 
@@ -741,6 +754,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100 sm:py-12">
+      {/* Sticky runway bar — appears when main runway scrolls out of view */}
+      {showLiveRunway && !runwayVisible && (
+        <div className="fixed inset-x-0 top-0 z-50 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Runway</span>
+            <span className={`text-2xl font-bold tabular-nums ${runwayColorClass}`}>
+              {runway >= 999 ? "Covered" : runway ? `${runway.toFixed(1)} mo` : "0 mo"}
+            </span>
+          </div>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-2xl space-y-8">
 
         {/* ── Header ── */}
@@ -792,7 +816,7 @@ export default function Home() {
 
         {/* ── Live runway hero (standalone when no results yet) ── */}
         {!hasFinancialInputs && (
-          <section className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
+          <section ref={runwayRef} className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
             <p className="mt-2 text-6xl font-bold tabular-nums text-slate-600 sm:text-7xl">—</p>
             <p className="mt-1 text-sm text-slate-400">Enter your savings and monthly costs above</p>
@@ -914,7 +938,7 @@ export default function Home() {
             {/* Hero card: runway + verdict + core tension */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
               {/* Runway number */}
-              <div className="text-center">
+              <div ref={runwayRef} className="text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
                 <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
                   {runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
