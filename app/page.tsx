@@ -718,500 +718,338 @@ export default function Home() {
     }
   };
 
+  // Collapsible section state
+  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) =>
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const inputClass = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-8 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
+  const inputClassNoDollar = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
+
+  const runwayColorClass =
+    !hasFinancialInputs ? "text-slate-600" :
+    runway >= 999 ? "text-emerald-400" :
+    runway > 18 ? "text-emerald-400" :
+    runway >= 6 ? "text-amber-400" : "text-rose-400";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-7 font-sans text-zinc-900">
-      <main className="w-full max-w-4xl rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-zinc-200 backdrop-blur-sm sm:p-7">
-        <header className="mb-7 text-center sm:mb-8">
-          <h1 className="text-3xl font-light tracking-tight text-zinc-900 sm:text-4xl">
+    <div className="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100 sm:py-12">
+      <main className="mx-auto w-full max-w-2xl space-y-8">
+
+        {/* ── Header ── */}
+        <header className="text-center">
+          <h1 className="font-[family-name:var(--font-serif)] text-4xl tracking-tight text-white sm:text-5xl">
             The Quit Calculator
           </h1>
-          <p className="mt-2 text-sm text-zinc-600 sm:text-base">
+          <p className="mt-3 text-sm text-slate-400 sm:text-base">
             A clear-eyed look at your finances, burnout, and next move.
           </p>
         </header>
 
-        <section className="grid gap-7 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:items-start">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Liquid savings
-              </label>
+        {/* ── Act 1: Core inputs ── */}
+        <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-200">Liquid savings</label>
               <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={savings}
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                <input type="number" min={0} value={savings}
                   onChange={(e) => setSavings(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                  placeholder="Total liquid savings you could use if you left"
-                />
+                  className={inputClass} placeholder="e.g. 25,000" />
               </div>
-              <p className="text-xs text-gray-400">
-                Cash or cash‑like savings you can safely tap to support yourself between roles.
-              </p>
             </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Monthly living costs
-              </label>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-200">Monthly living costs</label>
               <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={expenses}
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                <input type="number" min={0} value={expenses}
                   onChange={(e) => setExpenses(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                  placeholder="Rent, food, insurance, debt, and basics"
-                />
+                  className={inputClass} placeholder="e.g. 3,500" />
               </div>
-              <p className="text-xs text-gray-400">
-                Use an honest average of the bills you truly need to cover each month.
-              </p>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Monthly take-home pay
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={income}
-                  onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                  placeholder="e.g. 6,200"
-                />
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-slate-200">
+              Burnout level{" "}
+              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
+                {burnout}/10
+              </span>
+            </p>
+            <input type="range" min={1} max={10} value={burnout}
+              onChange={(e) => setBurnout(Number(e.target.value))}
+              className="w-full accent-slate-400" />
+            <p className="text-xs text-slate-400">1 = deeply rested, 10 = completely depleted</p>
+          </div>
+        </section>
+
+        {/* ── Live runway hero ── */}
+        <section className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
+          <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
+            {!hasFinancialInputs ? "—" : runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            {!hasFinancialInputs
+              ? "Enter your savings and monthly costs above"
+              : runway >= 999
+              ? "Your safety net covers your monthly expenses"
+              : "months of financial runway"}
+          </p>
+          {hasFinancialInputs && runway < 999 && runway > 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              Based on ${Math.round(totalCash).toLocaleString()} in savings{parsedSeverance > 0 ? " + severance" : ""} and ${Math.round(parsedExpenses).toLocaleString()}/mo in costs
+              {monthlySafetyNet > 0 && (
+                <span className="text-emerald-400"> · +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net</span>
+              )}
+            </p>
+          )}
+        </section>
+
+        {/* ── Act 2: Refine your picture (progressive disclosure) ── */}
+        <details className="group rounded-2xl bg-slate-800">
+          <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-slate-200 sm:px-7">
+            <span className="inline-flex items-center gap-2">
+              Refine your picture
+              <span className="text-xs text-slate-400">income, severance, age, career factors</span>
+              <svg className="h-4 w-4 text-slate-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </span>
+          </summary>
+          <div className="space-y-5 px-5 pb-6 sm:px-7">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Monthly take-home pay</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                  <input type="number" min={0} value={income}
+                    onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
+                    className={inputClass} placeholder="e.g. 6,200" />
+                </div>
               </div>
-              <p className="text-xs text-gray-400">
-                Your net monthly income after taxes and deductions.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Severance (optional)
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={severance}
-                  onChange={(e) =>
-                    setSeverance(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                  placeholder="Any one‑time payout if you left, can be 0"
-                />
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Severance (optional)</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                  <input type="number" min={0} value={severance}
+                    onChange={(e) => setSeverance(e.target.value === "" ? "" : Number(e.target.value))}
+                    className={inputClass} placeholder="0" />
+                </div>
               </div>
-              <p className="text-xs text-gray-400">
-                Include only what you are reasonably confident you would receive.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                Age
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min={18}
-                  max={70}
-                  value={age}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Age</label>
+                <input type="number" min={18} max={70} value={age}
                   onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-                  placeholder="Your age"
-                />
+                  className={inputClassNoDollar} placeholder="Your age" />
               </div>
-              <p className="text-xs text-gray-400">
-                Helps contextualize where you are in your career arc. Optional.
-              </p>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Burnout driver</label>
+                <select value={burnoutDriver}
+                  onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
+                  className={inputClassNoDollar}>
+                  <option value="Not sure">Not sure</option>
+                  <option value="Workload / hours">Workload / hours</option>
+                  <option value="Lack of meaning">Lack of meaning</option>
+                  <option value="Toxic culture">Toxic culture</option>
+                  <option value="Lack of growth">Lack of growth</option>
+                  <option value="Compensation mismatch">Compensation mismatch</option>
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-800">
-                What is driving your burnout?
-              </label>
-              <select
-                value={burnoutDriver}
-                onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
-              >
-                <option value="Not sure">Not sure</option>
-                <option value="Workload / hours">Workload / hours</option>
-                <option value="Lack of meaning">Lack of meaning</option>
-                <option value="Toxic culture">Toxic culture</option>
-                <option value="Lack of growth">Lack of growth</option>
-                <option value="Compensation mismatch">Compensation mismatch</option>
-              </select>
-              <p className="text-xs text-gray-400">
-                The root cause shapes which moves actually help.
-              </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-300">
+                  Job satisfaction <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">{satisfaction}/10</span>
+                </p>
+                <input type="range" min={1} max={10} value={satisfaction}
+                  onChange={(e) => setSatisfaction(Number(e.target.value))}
+                  className="w-full accent-slate-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-300">
+                  Growth at work <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">{growth}/10</span>
+                </p>
+                <input type="range" min={1} max={10} value={growth}
+                  onChange={(e) => setGrowth(Number(e.target.value))}
+                  className="w-full accent-slate-400" />
+              </div>
             </div>
 
-            <details className="group rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-              <summary className="cursor-pointer text-sm font-medium text-zinc-800 select-none">
-                Safety net (optional)
-                <span className="ml-2 text-xs text-gray-400">partner income, family support, unemployment</span>
+            <details className="group/net rounded-xl border border-slate-600 bg-slate-700/30 px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-200 select-none">
+                Safety net
+                <span className="ml-2 text-xs text-slate-400">partner income, family, unemployment</span>
               </summary>
-              <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-zinc-700">
-                    Partner / spouse monthly income
-                  </label>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">Partner income</label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={partnerIncome}
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                    <input type="number" min={0} value={partnerIncome}
                       onChange={(e) => setPartnerIncome(e.target.value === "" ? "" : Number(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
-                      placeholder="0"
-                    />
+                      className={inputClass} placeholder="0" />
                   </div>
-                  <p className="text-xs text-gray-400">Income that continues if you leave your job.</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-zinc-700">
-                    Family support (monthly)
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">Family support</label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={familySupport}
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                    <input type="number" min={0} value={familySupport}
                       onChange={(e) => setFamilySupport(e.target.value === "" ? "" : Number(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
-                      placeholder="0"
-                    />
+                      className={inputClass} placeholder="0" />
                   </div>
-                  <p className="text-xs text-gray-400">Reliable monthly help from family you can count on, not hope for.</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-zinc-700">
-                    Unemployment benefits (monthly)
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">Unemployment</label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={unemploymentBenefits}
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                    <input type="number" min={0} value={unemploymentBenefits}
                       onChange={(e) => setUnemploymentBenefits(e.target.value === "" ? "" : Number(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
-                      placeholder="0"
-                    />
+                      className={inputClass} placeholder="0" />
                   </div>
-                  <p className="text-xs text-gray-400">Factored for 6 months only. Typically 40-60% of salary, capped by state.</p>
+                  <p className="text-[10px] text-slate-500">First 6 months only</p>
                 </div>
               </div>
             </details>
+          </div>
+        </details>
 
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-zinc-700">
-                  Burnout level{" "}
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700">
-                    {burnout}/10
-                  </span>
-                </p>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={burnout}
-                  onChange={(e) => setBurnout(Number(e.target.value))}
-                  className="w-full accent-zinc-900"
-                />
-                <p className="text-xs text-gray-400">
-                  1 = deeply rested, 10 = completely depleted
-                </p>
+        {/* ── Act 3: Results ── */}
+        {hasFinancialInputs && (
+          <section className="space-y-4">
+            {/* Hero result card */}
+            <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  financialRisk === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
+                  financialRisk === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
+                  "border-rose-700/50 bg-rose-900/30 text-rose-300"
+                }`}>{financialRisk} financial risk</span>
+                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  burnoutLevel === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
+                  burnoutLevel === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
+                  "border-rose-700/50 bg-rose-900/30 text-rose-300"
+                }`}>{burnoutLevel} burnout</span>
+                {getCareerPhaseLabel(age) && (
+                  <span className="rounded-full border border-blue-700/50 bg-blue-900/30 px-3 py-1 text-xs font-semibold text-blue-300">{getCareerPhaseLabel(age)}</span>
+                )}
+                {burnoutDriver !== "Not sure" && (
+                  <span className="rounded-full border border-violet-700/50 bg-violet-900/30 px-3 py-1 text-xs font-semibold text-violet-300">{burnoutDriver}</span>
+                )}
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-zinc-700">
-                  Job satisfaction{" "}
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700">
-                    {satisfaction}/10
-                  </span>
-                </p>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={satisfaction}
-                  onChange={(e) => setSatisfaction(Number(e.target.value))}
-                  className="w-full accent-zinc-900"
-                />
-                <p className="text-xs text-gray-400">
-                  1 = misaligned and draining, 10 = energising and meaningful
-                </p>
+              <h2 className="mt-4 text-2xl font-semibold text-white">
+                {archetype === "None" ? "Mixed signals" : archetype}
+              </h2>
+              <p className="mt-1 text-sm text-slate-400">{getArchetypeExplanation(archetype)}</p>
+
+              <div className="mt-5 rounded-xl bg-slate-900/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Recommended move</p>
+                <p className="mt-1.5 text-base font-medium text-white">{headline}</p>
+                <p className="mt-1 text-xs text-slate-400">Strategy: {strategy}</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-zinc-700">
-                  Growth at work{" "}
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700">
-                    {growth}/10
-                  </span>
+              <p className="mt-5 text-sm leading-relaxed text-slate-300">{coreTension}</p>
+            </div>
+
+            {/* Scenarios */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Quit now</p>
+                <p className={`mt-1 text-2xl font-bold tabular-nums ${runway >= 999 ? "text-emerald-400" : runway > 18 ? "text-emerald-400" : runway >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                  {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
                 </p>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={growth}
-                  onChange={(e) => setGrowth(Number(e.target.value))}
-                  className="w-full accent-zinc-900"
-                />
-                <p className="text-xs text-gray-400">
-                  1 = stuck and underused, 10 = learning and compounding
+                <p className="text-xs text-slate-500">{runway >= 999 ? "covered" : "months"}</p>
+              </div>
+              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Stay 3 mo.</p>
+                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                  {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
                 </p>
+                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                  <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay3 - runway).toFixed(1)}</p>
+                )}
+                <p className="text-xs text-slate-500">months</p>
+              </div>
+              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Stay 6 mo.</p>
+                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                  {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
+                </p>
+                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                  <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay6 - runway).toFixed(1)}</p>
+                )}
+                <p className="text-xs text-slate-500">months</p>
+              </div>
+            </div>
+            <p className="text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
+
+            {/* Collapsible deep-dive sections */}
+            <div className="space-y-2">
+              {/* What to do next */}
+              <div className="rounded-xl bg-slate-800">
+                <button type="button" onClick={() => toggleSection("steps")}
+                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                  What to do next
+                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["steps"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {openSections["steps"] && (
+                  <div className="space-y-3 px-5 pb-5">
+                    {nextSteps.map((step, i) => (
+                      <div key={step} className="flex gap-3 text-xs leading-relaxed text-slate-300">
+                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-200">{i + 1}</span>
+                        <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Full analysis */}
+              <div className="rounded-xl bg-slate-800">
+                <button type="button" onClick={() => toggleSection("analysis")}
+                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                  Full analysis
+                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {openSections["analysis"] && (
+                  <div className="space-y-4 px-5 pb-5 text-xs leading-relaxed text-slate-300">
+                    <p>{whyParagraph}</p>
+                    {normalizationParagraph && <p className="italic text-slate-400">{normalizationParagraph}</p>}
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Decision confidence: {decisionConfidence.level}</p>
+                      <p className="mt-1">{decisionConfidence.explanation}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Reality check */}
+              <div className="rounded-xl bg-slate-800">
+                <button type="button" onClick={() => toggleSection("reality")}
+                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                  A reality check
+                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["reality"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {openSections["reality"] && (
+                  <p className="px-5 pb-5 text-xs leading-relaxed text-slate-300 italic">{realityCheck}</p>
+                )}
               </div>
             </div>
 
-          </div>
-
-          {showLiveRunway ? (
-            <aside className="sticky top-8 self-start space-y-4 rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-200 sm:p-5">
-              {/* Live runway counter — always visible once any financial input exists */}
-              <section className="rounded-xl bg-zinc-100/90 px-4 py-4 ring-1 ring-zinc-200/80">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Your Runway
-                </h2>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <p className={`text-4xl font-bold tabular-nums ${
-                    !hasFinancialInputs ? "text-zinc-300" :
-                    runway >= 999 ? "text-emerald-600" : runwayColor
-                  }`}>
-                    {!hasFinancialInputs ? "—" : runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
-                  </p>
-                  <p className="text-sm text-zinc-400">
-                    {!hasFinancialInputs ? "" : runway >= 999 ? "" : "months"}
-                  </p>
-                </div>
-                {!hasFinancialInputs && (
-                  <p className="mt-1 text-xs text-zinc-400">Add your monthly costs to see your runway calculate live.</p>
-                )}
-                {hasFinancialInputs && runway < 999 && runway > 0 && (
-                  <p className="mt-1 text-xs text-zinc-500">
-                    Based on ${Math.round(totalCash).toLocaleString()} in savings{parsedSeverance > 0 ? ` + severance` : ""} and ${Math.round(parsedExpenses).toLocaleString()}/mo in costs.
-                  </p>
-                )}
-                {hasFinancialInputs && runway >= 999 && (
-                  <p className="mt-1 text-xs text-emerald-600">Your safety net covers your monthly expenses.</p>
-                )}
-                {monthlySafetyNet > 0 && hasFinancialInputs && runway < 999 && (
-                  <p className="mt-1 text-[10px] text-emerald-600">
-                    +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in
-                    {parsedUnemployment > 0 && <span className="text-zinc-400"> (unemployment: first 6 mo only)</span>}
-                  </p>
-                )}
-              </section>
-
-              {hasFinancialInputs && (
-              <>
-              <section className="rounded-xl bg-zinc-100/90 px-3 py-3 ring-1 ring-zinc-200/80">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Your Exit Profile
-                </h2>
-                <p className="mt-1.5 text-2xl font-bold text-zinc-900">
-                  {archetype === "None" ? "No clear single profile" : archetype}
-                </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-zinc-600">
-                  {getArchetypeExplanation(archetype)}
-                </p>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Snapshot
-                </h3>
-
-                <div className="grid gap-1.5 text-xs sm:grid-cols-2">
-                  <div
-                    className={`flex items-center justify-between rounded-full border px-3 py-1.5 ${financialColorClasses}`}
-                  >
-                    <span className="font-medium">Financial risk</span>
-                    <span className="text-[11px] font-semibold uppercase tracking-wide">
-                      {financialRisk}
-                    </span>
-                  </div>
-                  <div
-                    className={`flex items-center justify-between rounded-full border px-3 py-1.5 ${burnoutColorClasses}`}
-                  >
-                    <span className="font-medium">Burnout level</span>
-                    <span className="text-[11px] font-semibold uppercase tracking-wide">
-                      {burnoutLevel}
-                    </span>
-                  </div>
-                  {getCareerPhaseLabel(age) && (
-                    <div className="flex items-center justify-between rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-800">
-                      <span className="font-medium">Career phase</span>
-                      <span className="text-[11px] font-semibold tracking-wide">
-                        {getCareerPhaseLabel(age)}
-                      </span>
-                    </div>
-                  )}
-                  {burnoutDriver !== "Not sure" && (
-                    <div className="flex items-center justify-between rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-violet-800">
-                      <span className="font-medium">Driver</span>
-                      <span className="text-[11px] font-semibold tracking-wide">
-                        {burnoutDriver}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Scenarios
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Quit now
-                    </p>
-                    <p className={`mt-0.5 text-lg font-semibold ${runway >= 999 ? "text-emerald-600" : scenarioColors(runway)}`}>
-                      {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
-                    </p>
-                    <p className="text-xs text-gray-400">{runway >= 999 ? "covered" : "months"}</p>
-                  </div>
-                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Stay 3 mo.
-                    </p>
-                    <p className={`mt-0.5 text-lg font-semibold ${runwayStay3 >= 999 ? "text-emerald-600" : scenarioColors(runwayStay3)}`}>
-                      {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
-                    </p>
-                    {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
-                      <p className="text-[10px] font-medium text-emerald-600">+{(runwayStay3 - runway).toFixed(1)}</p>
-                    )}
-                    <p className="text-xs text-gray-400">months</p>
-                  </div>
-                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Stay 6 mo.
-                    </p>
-                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runwayStay6)}`}>
-                      {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
-                    </p>
-                    {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
-                      <p className="text-[10px] font-medium text-emerald-600">+{(runwayStay6 - runway).toFixed(1)}</p>
-                    )}
-                    <p className="text-xs text-gray-400">months</p>
-                  </div>
-                </div>
-                <p className="text-xs font-medium text-zinc-700">{scenarioInsight}</p>
-                <p className="text-[11px] leading-relaxed text-gray-400">
-                  Assumes you save the difference between income and costs each month.
-                </p>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  What this actually comes down to
-                </h3>
-                <p className="text-sm leading-relaxed text-zinc-900">
-                  {coreTension}
-                </p>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Best next move
-                </h3>
-                <p className="text-xs font-medium text-zinc-500">
-                  Strategy: {strategy}
-                </p>
-                <p className="text-sm font-medium leading-relaxed text-zinc-900">
-                  {headline}
-                </p>
-                <p className="text-xs leading-relaxed text-zinc-600">
-                  {whyParagraph}
-                </p>
-                {normalizationParagraph && (
-                  <p className="text-xs leading-relaxed text-gray-400 italic">
-                    {normalizationParagraph}
-                  </p>
-                )}
-              </section>
-
-              <section className="space-y-1 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Decision confidence
-                </h3>
-                <p className="text-xs leading-relaxed text-zinc-600">
-                  {decisionConfidence.level}: {decisionConfidence.explanation}
-                </p>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  What to do next
-                </h3>
-                <ul className="space-y-3 text-xs leading-relaxed text-zinc-600">
-                  {nextSteps.map((step, i) => (
-                    <li key={step} className="flex gap-2">
-                      <span className="mt-[1px] flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-600">
-                        {i + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  A reality check
-                </h3>
-                <p className="text-xs leading-relaxed text-zinc-600 italic">
-                  {realityCheck}
-                </p>
-              </section>
-
-              <p className="border-t border-dashed border-zinc-200 pt-3 text-[11px] leading-relaxed text-gray-400">
-                This tool is a first‑pass decision aid. It does not account for taxes, health
-                insurance, dependents, or the job market. Use it as one input alongside people you
-                trust, your own judgement, and, if needed, professional advice.
-              </p>
-
-              <p className="text-center text-[11px] text-zinc-400">Think a friend needs to see their number?</p>
-              <button
-                type="button"
-                onClick={handleShareProfile}
-                className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-800"
-              >
-                Share my result
+            {/* Share + disclaimer */}
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <button type="button" onClick={handleShareProfile}
+                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 hover:text-white">
+                {copied ? "Copied!" : "Share my result"}
               </button>
-              </>
-              )}
-            </aside>
-          ) : (
-            <aside className="sticky top-8 flex items-center justify-center self-start rounded-2xl bg-zinc-50/80 p-4 text-center ring-1 ring-zinc-200 sm:p-5">
-              <p className="text-xs text-zinc-400">
-                Enter your savings or monthly costs to get started.
+              <p className="max-w-md text-center text-[11px] leading-relaxed text-slate-500">
+                This tool is a first‑pass decision aid. It does not account for taxes, health insurance, dependents, or the job market.
               </p>
-            </aside>
-          )}
-        </section>
+            </div>
+          </section>
+        )}
+
       </main>
     </div>
   );
