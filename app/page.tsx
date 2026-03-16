@@ -462,6 +462,16 @@ function getRealityCheck(
   return `${base} Whatever you decide, try to move in conversation with people you trust and at a pace your finances can realistically support.`;
 }
 
+function getCareerPhaseLabel(age: number | ""): string | null {
+  const a = typeof age === "number" ? age : 0;
+  if (a < 18) return null;
+  if (a <= 25) return "Early exploration";
+  if (a <= 30) return "Direction-setting";
+  if (a <= 35) return "Mid-career inflection";
+  if (a <= 45) return "Peak leverage";
+  return "Senior recalibration";
+}
+
 function getCoreTension(
   archetype: Archetype,
   burnoutDriver: BurnoutDriver,
@@ -645,6 +655,8 @@ export default function Home() {
       ? "border-amber-200 bg-amber-50 text-amber-800"
       : "border-rose-200 bg-rose-50 text-rose-800";
   const hasFinancialInputs = parsedExpenses > 0;
+  const hasAnySavings = parsedSavings > 0 || parsedSeverance > 0;
+  const showLiveRunway = hasAnySavings || hasFinancialInputs;
   const runwayColor =
     !runway || !Number.isFinite(runway)
       ? "text-zinc-900"
@@ -975,8 +987,45 @@ export default function Home() {
 
           </div>
 
-          {hasFinancialInputs ? (
+          {showLiveRunway ? (
             <aside className="sticky top-8 self-start space-y-4 rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-200 sm:p-5">
+              {/* Live runway counter — always visible once any financial input exists */}
+              <section className="rounded-xl bg-zinc-100/90 px-4 py-4 ring-1 ring-zinc-200/80">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                  Your Runway
+                </h2>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <p className={`text-4xl font-bold tabular-nums ${
+                    !hasFinancialInputs ? "text-zinc-300" :
+                    runway >= 999 ? "text-emerald-600" : runwayColor
+                  }`}>
+                    {!hasFinancialInputs ? "—" : runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
+                  </p>
+                  <p className="text-sm text-zinc-400">
+                    {!hasFinancialInputs ? "" : runway >= 999 ? "" : "months"}
+                  </p>
+                </div>
+                {!hasFinancialInputs && (
+                  <p className="mt-1 text-xs text-zinc-400">Add your monthly costs to see your runway calculate live.</p>
+                )}
+                {hasFinancialInputs && runway < 999 && runway > 0 && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Based on ${Math.round(totalCash).toLocaleString()} in savings{parsedSeverance > 0 ? ` + severance` : ""} and ${Math.round(parsedExpenses).toLocaleString()}/mo in costs.
+                  </p>
+                )}
+                {hasFinancialInputs && runway >= 999 && (
+                  <p className="mt-1 text-xs text-emerald-600">Your safety net covers your monthly expenses.</p>
+                )}
+                {monthlySafetyNet > 0 && hasFinancialInputs && runway < 999 && (
+                  <p className="mt-1 text-[10px] text-emerald-600">
+                    +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in
+                    {parsedUnemployment > 0 && <span className="text-zinc-400"> (unemployment: first 6 mo only)</span>}
+                  </p>
+                )}
+              </section>
+
+              {hasFinancialInputs && (
+              <>
               <section className="rounded-xl bg-zinc-100/90 px-3 py-3 ring-1 ring-zinc-200/80">
                 <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
                   Your Exit Profile
@@ -993,24 +1042,6 @@ export default function Home() {
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
                   Snapshot
                 </h3>
-
-                <div>
-                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Runway
-                    </p>
-                    <p className={`mt-0.5 text-xl font-semibold ${runway >= 999 ? "text-emerald-600" : runwayColor}`}>
-                      {runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "—"}
-                    </p>
-                    <p className="text-xs text-gray-400">{runway >= 999 ? "safety net covers expenses" : "months"}</p>
-                    {monthlySafetyNet > 0 && runway < 999 && (
-                      <p className="mt-1 text-[10px] text-emerald-600">
-                        +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in
-                        {parsedUnemployment > 0 && <span className="text-zinc-400"> (unemployment: first 6 mo only)</span>}
-                      </p>
-                    )}
-                  </div>
-                </div>
 
                 <div className="grid gap-1.5 text-xs sm:grid-cols-2">
                   <div
@@ -1029,6 +1060,22 @@ export default function Home() {
                       {burnoutLevel}
                     </span>
                   </div>
+                  {getCareerPhaseLabel(age) && (
+                    <div className="flex items-center justify-between rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-800">
+                      <span className="font-medium">Career phase</span>
+                      <span className="text-[11px] font-semibold tracking-wide">
+                        {getCareerPhaseLabel(age)}
+                      </span>
+                    </div>
+                  )}
+                  {burnoutDriver !== "Not sure" && (
+                    <div className="flex items-center justify-between rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-violet-800">
+                      <span className="font-medium">Driver</span>
+                      <span className="text-[11px] font-semibold tracking-wide">
+                        {burnoutDriver}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -1154,11 +1201,13 @@ export default function Home() {
               >
                 Share my result
               </button>
+              </>
+              )}
             </aside>
           ) : (
             <aside className="sticky top-8 flex items-center justify-center self-start rounded-2xl bg-zinc-50/80 p-4 text-center ring-1 ring-zinc-200 sm:p-5">
               <p className="text-xs text-zinc-400">
-                Enter your numbers on the left to see your snapshot.
+                Enter your savings or monthly costs to get started.
               </p>
             </aside>
           )}
