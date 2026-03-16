@@ -718,8 +718,15 @@ export default function Home() {
     }
   };
 
-  // Collapsible section state
-  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
+  // Split core tension: first sentence bold, rest lighter
+  const coreTensionParts = (() => {
+    const idx = coreTension.indexOf(". ");
+    if (idx === -1) return { lead: coreTension, rest: "" };
+    return { lead: coreTension.slice(0, idx + 1), rest: coreTension.slice(idx + 2) };
+  })();
+
+  // Collapsible section state — "steps" open by default
+  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({ steps: true });
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -783,34 +790,20 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Live runway hero ── */}
-        <section className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
-          <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
-            {!hasFinancialInputs ? "—" : runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
-          </p>
-          <p className="mt-1 text-sm text-slate-400">
-            {!hasFinancialInputs
-              ? "Enter your savings and monthly costs above"
-              : runway >= 999
-              ? "Your safety net covers your monthly expenses"
-              : "months of financial runway"}
-          </p>
-          {hasFinancialInputs && runway < 999 && runway > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
-              Based on ${Math.round(totalCash).toLocaleString()} in savings{parsedSeverance > 0 ? " + severance" : ""} and ${Math.round(parsedExpenses).toLocaleString()}/mo in costs
-              {monthlySafetyNet > 0 && (
-                <span className="text-emerald-400"> · +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net</span>
-              )}
-            </p>
-          )}
-        </section>
+        {/* ── Live runway hero (standalone when no results yet) ── */}
+        {!hasFinancialInputs && (
+          <section className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
+            <p className="mt-2 text-6xl font-bold tabular-nums text-slate-600 sm:text-7xl">—</p>
+            <p className="mt-1 text-sm text-slate-400">Enter your savings and monthly costs above</p>
+          </section>
+        )}
 
         {/* ── Act 2: Refine your picture (progressive disclosure) ── */}
         <details className="group rounded-2xl bg-slate-800">
           <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-slate-200 sm:px-7">
             <span className="inline-flex items-center gap-2">
-              Refine your picture
+              Add more detail
               <span className="text-xs text-slate-400">income, severance, age, career factors</span>
               <svg className="h-4 w-4 text-slate-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             </span>
@@ -914,12 +907,40 @@ export default function Home() {
           </div>
         </details>
 
-        {/* ── Act 3: Results ── */}
+        {/* ── Act 3: Results (merged runway + verdict + everything) ── */}
         {hasFinancialInputs && (
           <section className="space-y-4">
-            {/* Hero result card */}
+
+            {/* Hero card: runway + verdict + core tension */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Runway number */}
+              <div className="text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
+                <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
+                  {runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {runway >= 999 ? "Your safety net covers your monthly expenses" : "months of financial runway"}
+                </p>
+                {runway < 999 && runway > 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    ${Math.round(totalCash).toLocaleString()} savings{parsedSeverance > 0 ? " + severance" : ""} · ${Math.round(parsedExpenses).toLocaleString()}/mo costs
+                    {monthlySafetyNet > 0 && (
+                      <span className="text-emerald-400"> · +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net</span>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="my-6 border-t border-slate-700/50" />
+
+              {/* Verdict: headline leads, archetype is a badge */}
+              <h2 className="text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {archetype !== "None" && (
+                  <span className="rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-xs font-medium text-slate-300">{archetype}</span>
+                )}
                 <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                   financialRisk === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
                   financialRisk === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
@@ -933,36 +954,31 @@ export default function Home() {
                 {getCareerPhaseLabel(age) && (
                   <span className="rounded-full border border-blue-700/50 bg-blue-900/30 px-3 py-1 text-xs font-semibold text-blue-300">{getCareerPhaseLabel(age)}</span>
                 )}
-                {burnoutDriver !== "Not sure" && (
-                  <span className="rounded-full border border-violet-700/50 bg-violet-900/30 px-3 py-1 text-xs font-semibold text-violet-300">{burnoutDriver}</span>
-                )}
               </div>
 
-              <h2 className="mt-4 text-2xl font-semibold text-white">
-                {archetype === "None" ? "Mixed signals" : archetype}
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">{getArchetypeExplanation(archetype)}</p>
+              {/* Core tension: first sentence bold */}
+              <p className="mt-5 text-sm leading-relaxed">
+                <span className="font-medium text-white">{coreTensionParts.lead}</span>
+                {coreTensionParts.rest && <span className="text-slate-300"> {coreTensionParts.rest}</span>}
+              </p>
 
-              <div className="mt-5 rounded-xl bg-slate-900/60 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Recommended move</p>
-                <p className="mt-1.5 text-base font-medium text-white">{headline}</p>
-                <p className="mt-1 text-xs text-slate-400">Strategy: {strategy}</p>
-              </div>
-
-              <p className="mt-5 text-sm leading-relaxed text-slate-300">{coreTension}</p>
+              {/* Inline reality check */}
+              <p className="mt-4 text-xs italic leading-relaxed text-slate-500">
+                This tool surfaces patterns but cannot see your full life. Use it as one input alongside people you trust.
+              </p>
             </div>
 
             {/* Scenarios */}
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Quit now</p>
+                <p className="text-[11px] font-medium text-slate-500">If you quit today</p>
                 <p className={`mt-1 text-2xl font-bold tabular-nums ${runway >= 999 ? "text-emerald-400" : runway > 18 ? "text-emerald-400" : runway >= 6 ? "text-amber-400" : "text-rose-400"}`}>
                   {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
                 </p>
                 <p className="text-xs text-slate-500">{runway >= 999 ? "covered" : "months"}</p>
               </div>
               <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Stay 3 mo.</p>
+                <p className="text-[11px] font-medium text-slate-500">If you stay 3 months</p>
                 <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
                   {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
                 </p>
@@ -972,7 +988,7 @@ export default function Home() {
                 <p className="text-xs text-slate-500">months</p>
               </div>
               <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Stay 6 mo.</p>
+                <p className="text-[11px] font-medium text-slate-500">If you stay 6 months</p>
                 <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
                   {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
                 </p>
@@ -984,69 +1000,52 @@ export default function Home() {
             </div>
             <p className="text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
 
-            {/* Collapsible deep-dive sections */}
-            <div className="space-y-2">
-              {/* What to do next */}
-              <div className="rounded-xl bg-slate-800">
-                <button type="button" onClick={() => toggleSection("steps")}
-                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                  What to do next
-                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["steps"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                {openSections["steps"] && (
-                  <div className="space-y-3 px-5 pb-5">
-                    {nextSteps.map((step, i) => (
-                      <div key={step} className="flex gap-3 text-xs leading-relaxed text-slate-300">
-                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-200">{i + 1}</span>
-                        <span>{step}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Full analysis */}
-              <div className="rounded-xl bg-slate-800">
-                <button type="button" onClick={() => toggleSection("analysis")}
-                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                  Full analysis
-                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                {openSections["analysis"] && (
-                  <div className="space-y-4 px-5 pb-5 text-xs leading-relaxed text-slate-300">
-                    <p>{whyParagraph}</p>
-                    {normalizationParagraph && <p className="italic text-slate-400">{normalizationParagraph}</p>}
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Decision confidence: {decisionConfidence.level}</p>
-                      <p className="mt-1">{decisionConfidence.explanation}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Reality check */}
-              <div className="rounded-xl bg-slate-800">
-                <button type="button" onClick={() => toggleSection("reality")}
-                  className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                  A reality check
-                  <svg className={`h-4 w-4 text-slate-400 transition ${openSections["reality"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                {openSections["reality"] && (
-                  <p className="px-5 pb-5 text-xs leading-relaxed text-slate-300 italic">{realityCheck}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Share + disclaimer */}
-            <div className="flex flex-col items-center gap-3 pt-2">
-              <button type="button" onClick={handleShareProfile}
-                className="rounded-xl border border-slate-700 bg-slate-800 px-8 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 hover:text-white">
-                {copied ? "Copied!" : "Share my result"}
+            {/* What to do next — open by default */}
+            <div className="rounded-xl bg-slate-800">
+              <button type="button" onClick={() => toggleSection("steps")}
+                className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                What to do next
+                <svg className={`h-4 w-4 text-slate-400 transition ${openSections["steps"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
-              <p className="max-w-md text-center text-[11px] leading-relaxed text-slate-500">
-                This tool is a first‑pass decision aid. It does not account for taxes, health insurance, dependents, or the job market.
-              </p>
+              {openSections["steps"] && (
+                <div className="space-y-3 px-5 pb-5">
+                  {nextSteps.map((step, i) => (
+                    <div key={step} className="flex gap-3 text-xs leading-relaxed text-slate-300">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-200">{i + 1}</span>
+                      <span>{step}</span>
+                    </div>
+                  ))}
+                  <div className="mt-2 flex items-center justify-between border-t border-slate-700/50 pt-3">
+                    <p className="text-[11px] text-slate-500">Confidence: {decisionConfidence.level}</p>
+                    <button type="button" onClick={handleShareProfile}
+                      className="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
+                      {copied ? "Copied!" : "Copy my summary"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* How we got here */}
+            <div className="rounded-xl bg-slate-800">
+              <button type="button" onClick={() => toggleSection("analysis")}
+                className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                How we got here
+                <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {openSections["analysis"] && (
+                <div className="space-y-4 px-5 pb-5 text-xs leading-relaxed text-slate-300">
+                  <p>{whyParagraph}</p>
+                  {normalizationParagraph && <p className="italic text-slate-400">{normalizationParagraph}</p>}
+                  <p className="text-slate-400">{realityCheck}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Disclaimer */}
+            <p className="text-center text-[11px] leading-relaxed text-slate-500">
+              This is a first‑pass decision aid, not financial or career advice.
+            </p>
           </section>
         )}
 
