@@ -336,45 +336,71 @@ function getArchetypeExplanation(archetype: Archetype): string {
   }
 }
 
-function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: number, satisfaction: number, growth: number, income: number, expenses: number): string[] {
+function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: number, satisfaction: number, growth: number, income: number, expenses: number, burnoutDriver: BurnoutDriver, burnoutScore: number, age: number | ""): string[] {
   const steps: string[] = [];
   const monthlySurplus = income - expenses;
+  const parsedAge = typeof age === "number" ? age : 0;
 
-  // Step 1: Timing/planning based on runway
-  if (runway < 4) {
-    steps.push(`Start a focused job search now. With ${runway.toFixed(1)} months of runway, you need an offer in hand before you resign — not after.`);
-  } else if (runway < 8) {
-    steps.push(`You have ${runway.toFixed(1)} months — enough for a search, not a sabbatical. Start having exploratory conversations this week while your title still opens doors.`);
-  } else if (runway <= 14) {
-    const decompression = Math.floor(runway * 0.25);
-    const search = Math.floor(runway * 0.4);
-    const buffer = Math.floor(runway * 0.35);
-    steps.push(`With ${runway.toFixed(1)} months, you can take a ${decompression}-month decompression period, then run a ${search}-month search with ${buffer} months as a safety buffer.`);
+  // Step 1: The specific thing to do THIS WEEK
+  if (path === "Consider taking a break or quitting") {
+    if (runway >= 18) {
+      steps.push("This week: tell one person you trust that you're seriously considering leaving. Not to get advice — to say it out loud and see how it feels. You have the money. The question is whether you have the permission you're waiting for from yourself.");
+    } else {
+      steps.push("This week: block 2 hours and write down what your first 30 days after quitting would actually look like. Not a fantasy — the real version. If you can picture it clearly and it doesn't terrify you, that's a signal.");
+    }
+  } else if (path === "Search while employed") {
+    steps.push("This week: reach out to 3 people who have jobs you find interesting and ask them one question: 'What's the worst part of your role that nobody talks about?' You're not job hunting yet — you're gathering intelligence so you don't jump into something equally wrong.");
+  } else if (path === "Build more runway before quitting") {
+    if (monthlySurplus > 0) {
+      const targetMonths = Math.max(0, 6 - runway);
+      const monthsToTarget = targetMonths > 0 ? Math.ceil((targetMonths * expenses) / monthlySurplus) : 0;
+      steps.push(`This week: open a separate savings account and set up a $${Math.round(monthlySurplus * 0.7).toLocaleString()} auto-transfer. In ${monthsToTarget || "a few"} months you'll have 6 months of runway, and that changes everything about how trapped you feel.`);
+    } else {
+      steps.push("This week: list every subscription and recurring charge you have. Most people find $200-400/month they forgot about. That's not budgeting — it's buying yourself time.");
+    }
   } else {
-    steps.push(`You have ${runway.toFixed(1)} months of runway — more than most people get. Take 4–6 weeks completely offline before making any decisions. Burnout distorts your judgment about what you actually want.`);
+    steps.push("This week: write down the 3 specific things that would need to change for you to feel good about staying. Then ask yourself honestly — are any of them in your control? If yes, start with the smallest one.");
   }
 
-  // Step 2: Career strategy based on satisfaction + growth
-  if (satisfaction <= 3 && growth <= 3) {
-    steps.push("Your role is draining you and not building toward anything. This isn't a rough patch — it's a signal. Start mapping adjacent roles where your skills transfer but the work itself changes.");
-  } else if (satisfaction <= 4 && growth >= 6) {
-    steps.push("You're learning but miserable — that's a culture or role-fit problem, not a career problem. Look for the same type of work in a different environment before changing industries.");
-  } else if (satisfaction >= 6 && growth <= 4) {
-    steps.push("You like the work but you've plateaued. Before quitting, have a direct conversation about growth. If nothing changes in 60 days, that's your answer.");
-  } else if (satisfaction >= 6 && growth >= 6) {
-    steps.push("Your scores suggest this might be temporary burnout, not a fundamental misfit. Consider a leave of absence or reduced schedule before making a permanent exit.");
+  // Step 2: The real career move based on what's actually wrong
+  if (burnoutDriver === "Toxic culture") {
+    steps.push("The environment is the problem, not you. No amount of boundary-setting fixes a fundamentally broken culture. Focus your energy on getting out — the same work at a healthy company will feel like a different career.");
+  } else if (burnoutDriver === "Lack of meaning") {
+    if (satisfaction <= 4) {
+      steps.push("You're not burned out from too much work — you're burned out from work that doesn't matter to you. Before changing jobs, get clear on what 'meaningful' actually means for you. Is it impact? Autonomy? Creative expression? The answer changes where you should look.");
+    } else {
+      steps.push("The meaning gap is real but it doesn't always require a career change. Sometimes it's a project, a side thing, or a team switch. Try volunteering your skills somewhere that matters to you for 5 hours a week and see if that changes the math.");
+    }
+  } else if (burnoutDriver === "Workload / hours") {
+    steps.push("Before quitting, run one experiment: say no to something this week that you would normally say yes to. If the world doesn't end, do it again. If your boss punishes boundaries, that tells you everything you need to know about whether this is fixable.");
+  } else if (burnoutDriver === "Lack of growth") {
+    if (parsedAge > 0 && parsedAge <= 30) {
+      steps.push("You're early enough that a lateral move to a faster-growing company can restart your trajectory without starting over. Look for smaller companies where you'd be slightly over your head — that's where growth lives.");
+    } else {
+      steps.push("Growth stalls usually mean you've outgrown the role, not that you've peaked. Talk to your manager about what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.");
+    }
+  } else if (burnoutDriver === "Compensation mismatch") {
+    steps.push("Get your market number. Use levels.fyi, Glassdoor, or ask peers directly. If you're more than 15% below market, you don't have a motivation problem — you have an information problem. Armed with data, either negotiate or leave knowing you tried.");
   } else {
-    steps.push("Your satisfaction and growth signals are mixed. Write down specifically what energizes you versus what drains you — the pattern will point you toward the right kind of change.");
+    if (satisfaction <= 3 && growth <= 3) {
+      steps.push("Low satisfaction and low growth together isn't a rough patch — it's a slow decline. Start mapping what you'd do differently if money weren't a factor, then find the version of that which pays.");
+    } else {
+      steps.push("Your signals are mixed, which usually means the problem is specific, not existential. Keep a 2-week log of what drains you vs. what energizes you. The pattern will point you somewhere more useful than a gut feeling.");
+    }
   }
 
-  // Step 3: Financial action
-  if (income > 0 && expenses > 0 && monthlySurplus > 0) {
+  // Step 3: The money move
+  if (runway >= 999) {
+    steps.push("Your safety net covers your expenses. That's rare and powerful. The risk for you isn't financial — it's staying too long because you can afford to be comfortable. Set a decision deadline and honor it.");
+  } else if (income > 0 && expenses > 0 && monthlySurplus > 0 && runway < 12) {
     const monthsPerMonth = (monthlySurplus / expenses).toFixed(1);
-    steps.push(`You're saving roughly $${Math.round(monthlySurplus).toLocaleString()}/month. Every month you stay adds about ${monthsPerMonth} months to your runway. Know your number and pick your exit date.`);
-  } else if (runway < 6) {
-    steps.push("Open a separate 'runway account' and automate transfers into it. Watching that number grow will make the leap feel less reckless.");
+    steps.push(`Every month you stay adds ${monthsPerMonth} months to your runway. That means staying 3 more months buys you ${(monthlySurplus * 3 / expenses).toFixed(0)} months of freedom. Decide what your target number is and work backward to your quit date.`);
+  } else if (runway >= 12) {
+    steps.push("You have over a year of runway. Stop using money as the reason to stay — it's not the real blocker anymore. The real question is: what are you afraid happens if you actually leave?");
+  } else if (runway < 3) {
+    steps.push("With less than 3 months of runway, do not quit without an offer or a concrete plan. That's not cowardice — it's strategy. Desperation is the worst negotiating position.");
   } else {
-    steps.push("Your financial position is solid. The risk isn't money — it's inertia. Set a decision deadline: if nothing has changed in 3 months, you leave.");
+    steps.push("Your financial position is workable but not comfortable. Focus on getting to 6 months of runway — that's the threshold where most people stop making fear-based decisions.");
   }
 
   return steps;
@@ -436,6 +462,60 @@ function getRealityCheck(
   return `${base} Whatever you decide, try to move in conversation with people you trust and at a pace your finances can realistically support.`;
 }
 
+function getCoreTension(
+  archetype: Archetype,
+  burnoutDriver: BurnoutDriver,
+  financialRisk: RiskLevel,
+  runway: number,
+  burnoutScore: number
+): string {
+  // This names the REAL thing the person is wrestling with
+
+  if (archetype === "Burned-Out Achiever") {
+    if (burnoutDriver === "Workload / hours") {
+      return "You've built real financial security by working at a pace your body and mind can no longer sustain. The tension isn't whether you can afford to leave — it's whether you can let go of the identity that got you here.";
+    }
+    if (burnoutDriver === "Lack of meaning") {
+      return "You're good at what you do and you've been rewarded for it, but the work has stopped meaning anything to you. The hard part isn't money or options — it's admitting that success on someone else's terms isn't enough anymore.";
+    }
+    return "You've earned the right to step back, but achievers often feel like rest is failure. The real question: can you sit with discomfort long enough to figure out what you actually want, or will you just sprint into the next thing?";
+  }
+
+  if (archetype === "Trapped Professional") {
+    if (financialRisk === "High") {
+      return "You feel stuck because you are — high burnout and tight finances is the hardest combination. But 'trapped' is a feeling, not a fact. The path out is slower than you want, but it exists: stabilize the money, then make the move.";
+    }
+    return "The trap feels total, but it's usually one or two specific things — a boss, a commute, a role that shrank. Name the actual constraint. The way out is usually narrower and more specific than 'change everything.'";
+  }
+
+  if (archetype === "Restless Optimizer") {
+    return "Nothing is technically wrong, and that's what makes this so confusing. You're not burned out enough to justify quitting and not satisfied enough to stop thinking about it. The risk isn't leaving — it's spending years in comfortable limbo.";
+  }
+
+  if (archetype === "Early Career Crisis") {
+    return "Early career feels like everyone else has it figured out and you're behind. They don't and you're not. The real tension is between wanting certainty and needing to experiment. You can't think your way to the right career — you have to try things.";
+  }
+
+  if (archetype === "Comfortable Drifter") {
+    return "Your situation is stable enough that there's no crisis forcing a decision. That's a luxury and a trap. The tension is between comfort now and regret later. The question isn't 'should I quit?' — it's 'what am I drifting toward?'";
+  }
+
+  // Generic fallback based on burnout + finances
+  if (burnoutScore >= 7 && financialRisk === "Low") {
+    return "You can afford to leave and your body is telling you to. The only thing keeping you is inertia, identity, or fear of what comes next. Name which one it is — that's where the real decision lives.";
+  }
+
+  if (burnoutScore >= 7 && financialRisk === "High") {
+    return "You need to leave but can't afford to yet. That's the hardest position to be in. The goal isn't to feel better about staying — it's to build a bridge out as fast as possible while protecting your mental health in the meantime.";
+  }
+
+  if (burnoutScore < 4) {
+    return "Your burnout is low, which means this isn't a crisis — it's a question of direction. You have the clarity and energy to make a thoughtful move rather than a desperate one. Don't waste that advantage by overthinking it.";
+  }
+
+  return "Your situation has real tension in it, and there's no clean answer. That's normal. The goal isn't to find the perfect move — it's to find one that's good enough and that you can commit to without looking back every week.";
+}
+
 export default function Home() {
   const [savings, setSavings] = React.useState<number | "">("");
   const [expenses, setExpenses] = React.useState<number | "">("");
@@ -457,16 +537,48 @@ export default function Home() {
   const parsedFamilySupport = typeof familySupport === "number" ? familySupport : parseFloat(familySupport || "0");
   const parsedUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
 
+  const UNEMPLOYMENT_MONTHS = 6;
   const monthlySafetyNet = parsedPartnerIncome + parsedFamilySupport + parsedUnemployment;
-  const effectiveExpenses = Math.max(0, parsedExpenses - monthlySafetyNet);
+  const ongoingSafetyNet = parsedPartnerIncome + parsedFamilySupport; // after unemployment expires
+  const phase1Expenses = Math.max(0, parsedExpenses - monthlySafetyNet); // first 6 months
+  const phase2Expenses = Math.max(0, parsedExpenses - ongoingSafetyNet); // after unemployment ends
+  const effectiveExpenses = phase2Expenses; // used for display/scenarios after benefits expire
 
-  const runway =
-    effectiveExpenses > 0 ? (parsedSavings + parsedSeverance) / effectiveExpenses :
-    parsedExpenses > 0 && monthlySafetyNet >= parsedExpenses ? 999 : 0;
+  // Runway accounts for unemployment benefits lasting only 6 months
+  const totalCash = parsedSavings + parsedSeverance;
+  const runway = (() => {
+    if (parsedExpenses <= 0) return 0;
+    // Phase 1: with unemployment (up to 6 months)
+    if (phase1Expenses <= 0) {
+      // Safety net covers everything during phase 1
+      if (phase2Expenses <= 0) return 999; // ongoing safety net covers everything too
+      return UNEMPLOYMENT_MONTHS + totalCash / phase2Expenses;
+    }
+    const phase1Months = totalCash / phase1Expenses;
+    if (phase1Months <= UNEMPLOYMENT_MONTHS) return phase1Months; // cash runs out before benefits expire
+    // Cash survives past 6 months — switch to phase 2 rate
+    const cashAfterPhase1 = totalCash - phase1Expenses * UNEMPLOYMENT_MONTHS;
+    if (phase2Expenses <= 0) return 999; // ongoing safety net covers post-unemployment
+    return UNEMPLOYMENT_MONTHS + cashAfterPhase1 / phase2Expenses;
+  })();
 
   const monthlySurplus = parsedIncome - parsedExpenses;
-  const runwayStay3 = effectiveExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 3) / effectiveExpenses : runway;
-  const runwayStay6 = effectiveExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 6) / effectiveExpenses : runway;
+  const runwayStay3 = (() => {
+    const cash = totalCash + Math.max(0, monthlySurplus) * 3;
+    if (phase1Expenses <= 0) return phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + cash / phase2Expenses;
+    const p1 = cash / phase1Expenses;
+    if (p1 <= UNEMPLOYMENT_MONTHS) return p1;
+    const rem = cash - phase1Expenses * UNEMPLOYMENT_MONTHS;
+    return phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + rem / phase2Expenses;
+  })();
+  const runwayStay6 = (() => {
+    const cash = totalCash + Math.max(0, monthlySurplus) * 6;
+    if (phase1Expenses <= 0) return phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + cash / phase2Expenses;
+    const p1 = cash / phase1Expenses;
+    if (p1 <= UNEMPLOYMENT_MONTHS) return p1;
+    const rem = cash - phase1Expenses * UNEMPLOYMENT_MONTHS;
+    return phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + rem / phase2Expenses;
+  })();
   const scenarioDelta = runwayStay6 - runway;
   const scenarioInsight = scenarioDelta > 8
     ? `Staying 6 more months nearly doubles your runway. That's significant leverage.`
@@ -496,7 +608,7 @@ export default function Home() {
     recommendedPath,
     archetype
   );
-  const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses);
+  const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses, burnoutDriver, burnoutScore, age);
   const strategy = getStrategy(recommendedPath);
   const careerTrajectory = getCareerTrajectory(satisfaction, growth);
   const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
@@ -513,11 +625,11 @@ export default function Home() {
   const whyParts: string[] = [situationSummary];
   if (burnoutDriverInsight) whyParts.push(burnoutDriverInsight);
   if (careerTimingPerspective) whyParts.push(careerTimingPerspective);
-  const fullWhyParagraph = whyParts.join(" ");
-  const whyParagraph = fullWhyParagraph
-    .split(/(?<=[.!?])\s+/)
-    .slice(0, 2)
-    .join(" ");
+  const whyParagraph = whyParts.join(" ");
+
+  const realityCheck = getRealityCheck(archetype, careerHealthLabel, financialRisk, burnoutDriver);
+
+  const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
 
   const financialColorClasses =
     financialRisk === "Low"
@@ -794,7 +906,7 @@ export default function Home() {
                       placeholder="0"
                     />
                   </div>
-                  <p className="text-xs text-gray-400">Only if you are eligible and plan to file. Typically 40-60% of salary, capped by state.</p>
+                  <p className="text-xs text-gray-400">Factored for 6 months only. Typically 40-60% of salary, capped by state.</p>
                 </div>
               </div>
             </details>
@@ -892,7 +1004,10 @@ export default function Home() {
                     </p>
                     <p className="text-xs text-gray-400">{runway >= 999 ? "safety net covers expenses" : "months"}</p>
                     {monthlySafetyNet > 0 && runway < 999 && (
-                      <p className="mt-1 text-[10px] text-emerald-600">+${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in</p>
+                      <p className="mt-1 text-[10px] text-emerald-600">
+                        +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in
+                        {parsedUnemployment > 0 && <span className="text-zinc-400"> (unemployment: first 6 mo only)</span>}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -964,6 +1079,15 @@ export default function Home() {
 
               <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                  What this actually comes down to
+                </h3>
+                <p className="text-sm leading-relaxed text-zinc-900">
+                  {coreTension}
+                </p>
+              </section>
+
+              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
                   Best next move
                 </h3>
                 <p className="text-xs font-medium text-zinc-500">
@@ -993,16 +1117,27 @@ export default function Home() {
 
               <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Suggested next steps
+                  What to do next
                 </h3>
-                <ul className="space-y-1.5 text-xs leading-relaxed text-zinc-600">
-                  {nextSteps.map((step) => (
+                <ul className="space-y-3 text-xs leading-relaxed text-zinc-600">
+                  {nextSteps.map((step, i) => (
                     <li key={step} className="flex gap-2">
-                      <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-zinc-400" />
+                      <span className="mt-[1px] flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-600">
+                        {i + 1}
+                      </span>
                       <span>{step}</span>
                     </li>
                   ))}
                 </ul>
+              </section>
+
+              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                  A reality check
+                </h3>
+                <p className="text-xs leading-relaxed text-zinc-600 italic">
+                  {realityCheck}
+                </p>
               </section>
 
               <p className="border-t border-dashed border-zinc-200 pt-3 text-[11px] leading-relaxed text-gray-400">
