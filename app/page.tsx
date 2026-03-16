@@ -756,14 +756,18 @@ export default function Home() {
     <div className="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100 sm:py-12">
       {/* Sticky runway bar — appears when main runway scrolls out of view */}
       {showLiveRunway && !runwayVisible && (
-        <div className="fixed inset-x-0 top-0 z-50 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Runway</span>
-            <span className={`text-2xl font-bold tabular-nums ${runwayColorClass}`}>
-              {runway >= 999 ? "Covered" : runway ? `${runway.toFixed(1)} mo` : "0 mo"}
-            </span>
+        <>
+          <div className="fixed inset-x-0 top-0 z-50 bg-slate-800/95 shadow-lg shadow-black/20 backdrop-blur-sm">
+            <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Runway</span>
+              <span className={`text-lg font-bold tabular-nums ${runwayColorClass}`}>
+                {runway >= 999 ? "Covered" : runway ? `${runway.toFixed(1)} mo` : "0 mo"}
+              </span>
+            </div>
           </div>
-        </div>
+          {/* Spacer so fixed bar doesn't overlap page content */}
+          <div className="h-10" />
+        </>
       )}
       <main className="mx-auto w-full max-w-2xl space-y-8">
 
