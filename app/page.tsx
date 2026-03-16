@@ -865,14 +865,14 @@ export default function Home() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">(optional — for context, not used in runway)</span></label>
+              <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">Optional. Used for context, not runway.</span></label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                 <input type="number" min={0} value={netWorth}
                   onChange={(e) => setNetWorth(e.target.value === "" ? "" : Number(e.target.value))}
                   className={inputClass} placeholder="e.g. 150,000" />
               </div>
-              <p className="text-xs text-slate-400">Retirement accounts, investments, property equity — everything beyond your liquid savings</p>
+              <p className="text-xs text-slate-400">Investments, retirement accounts, equity, and other assets beyond cash savings.</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
