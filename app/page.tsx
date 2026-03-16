@@ -730,14 +730,6 @@ export default function Home() {
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  // Sticky runway: show bar once user scrolls past 300px
-  const [showStickyRunway, setShowStickyRunway] = React.useState(false);
-  React.useEffect(() => {
-    const onScroll = () => setShowStickyRunway(window.scrollY > 300);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const inputClass = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-8 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
   const inputClassNoDollar = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
 
@@ -749,8 +741,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100 sm:py-12">
-      {/* Sticky runway bar — appears when user scrolls down */}
-      {showLiveRunway && showStickyRunway && (
+      {/* Persistent runway bar — always pinned to top */}
+      {showLiveRunway && (
         <div className="fixed inset-x-0 top-0 z-50 bg-slate-800/95 shadow-lg shadow-black/20 backdrop-blur-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2">
             <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Runway</span>
@@ -760,6 +752,8 @@ export default function Home() {
           </div>
         </div>
       )}
+      {/* Spacer to offset fixed bar */}
+      {showLiveRunway && <div className="h-10" />}
       <main className="mx-auto w-full max-w-2xl space-y-8">
 
         {/* ── Header ── */}
