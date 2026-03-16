@@ -274,7 +274,7 @@ function getSituationSummary(
 
   const archetypeText =
     archetype !== "None"
-      ? ` In this rough framework you look most like a “${archetype}”.`
+      ? ` In this rough framework you look most like a "${archetype}".`
       : "";
 
   if (path === "Consider taking a break or quitting") {
@@ -336,75 +336,48 @@ function getArchetypeExplanation(archetype: Archetype): string {
   }
 }
 
-function getNextSteps(path: RecommendedPath, archetype: Archetype, runway?: number): string[] {
-  if (path === "Consider taking a break or quitting") {
-    if (runway !== undefined && runway > 14) {
-      return [
-        `You have ${runway.toFixed(1)} months of runway. Money isn't your constraint right now — clarity is.`,
-      ];
-    }
+function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: number, satisfaction: number, growth: number, income: number, expenses: number): string[] {
+  const steps: string[] = [];
+  const monthlySurplus = income - expenses;
 
-    if (archetype === "Burned-Out Achiever") {
-      return [
-        "Name the specific ways achievement has been running your life and what a healthier version would look like.",
-        "Sketch a simple 3–6 month break or downshift plan that protects your finances and your nervous system.",
-        "Share that draft with one grounded friend or mentor and invite honest feedback on risks and blind spots.",
-      ];
-    }
-
-    return [
-      "List your non‑negotiables for your next chapter: health, rest, learning, or something else.",
-      "Run a simple budget with your runway to decide how long a break could realistically last.",
-      "Talk to one trusted person who knows you well and can help you reality‑check this move.",
-    ];
+  // Step 1: Timing/planning based on runway
+  if (runway < 4) {
+    steps.push(`Start a focused job search now. With ${runway.toFixed(1)} months of runway, you need an offer in hand before you resign — not after.`);
+  } else if (runway < 8) {
+    steps.push(`You have ${runway.toFixed(1)} months — enough for a search, not a sabbatical. Start having exploratory conversations this week while your title still opens doors.`);
+  } else if (runway <= 14) {
+    const decompression = Math.floor(runway * 0.25);
+    const search = Math.floor(runway * 0.4);
+    const buffer = Math.floor(runway * 0.35);
+    steps.push(`With ${runway.toFixed(1)} months, you can take a ${decompression}-month decompression period, then run a ${search}-month search with ${buffer} months as a safety buffer.`);
+  } else {
+    steps.push(`You have ${runway.toFixed(1)} months of runway — more than most people get. Take 4–6 weeks completely offline before making any decisions. Burnout distorts your judgment about what you actually want.`);
   }
 
-  if (path === "Build more runway before quitting") {
-    if (archetype === "Trapped Professional") {
-      return [
-        "Clarify the minimum financial runway that would make you feel meaningfully less trapped.",
-        "Identify one or two realistic levers (spend less, earn more, change location) and attach rough numbers to each.",
-        "Set a modest, time‑bound plan (for example 6–12 months) to move toward that target while you gather support.",
-      ];
-    }
-
-    return [
-      "Tighten or reorganize your monthly expenses so that each dollar has a clear job.",
-      "Decide on a target runway (for example 6–12 months) and calculate the gap from today.",
-      "Explore ways to increase income or savings while keeping your current role as stable as possible.",
-    ];
+  // Step 2: Career strategy based on satisfaction + growth
+  if (satisfaction <= 3 && growth <= 3) {
+    steps.push("Your role is draining you and not building toward anything. This isn't a rough patch — it's a signal. Start mapping adjacent roles where your skills transfer but the work itself changes.");
+  } else if (satisfaction <= 4 && growth >= 6) {
+    steps.push("You're learning but miserable — that's a culture or role-fit problem, not a career problem. Look for the same type of work in a different environment before changing industries.");
+  } else if (satisfaction >= 6 && growth <= 4) {
+    steps.push("You like the work but you've plateaued. Before quitting, have a direct conversation about growth. If nothing changes in 60 days, that's your answer.");
+  } else if (satisfaction >= 6 && growth >= 6) {
+    steps.push("Your scores suggest this might be temporary burnout, not a fundamental misfit. Consider a leave of absence or reduced schedule before making a permanent exit.");
+  } else {
+    steps.push("Your satisfaction and growth signals are mixed. Write down specifically what energizes you versus what drains you — the pattern will point you toward the right kind of change.");
   }
 
-  if (path === "Search while employed") {
-    if (archetype === "Restless Optimizer") {
-      return [
-        "Write down what “a better chapter” means in concrete terms: skills, environments, impact, and compensation.",
-        "Identify 5–10 roles or companies that genuinely fit that picture, not just what your peers are doing.",
-        "Schedule recurring, protected time each week for low‑pressure exploration, conversations, and applications.",
-      ];
-    }
-
-    return [
-      "Write a short, honest description of what is and is not working in your current role.",
-      "Refresh your resume and LinkedIn to highlight work you actually enjoyed doing.",
-      "Block quiet time each week for networking, outreach, or low‑pressure applications.",
-    ];
+  // Step 3: Financial action
+  if (income > 0 && expenses > 0 && monthlySurplus > 0) {
+    const monthsPerMonth = (monthlySurplus / expenses).toFixed(1);
+    steps.push(`You're saving roughly $${Math.round(monthlySurplus).toLocaleString()}/month. Every month you stay adds about ${monthsPerMonth} months to your runway. Know your number and pick your exit date.`);
+  } else if (runway < 6) {
+    steps.push("Open a separate 'runway account' and automate transfers into it. Watching that number grow will make the leap feel less reckless.");
+  } else {
+    steps.push("Your financial position is solid. The risk isn't money — it's inertia. Set a decision deadline: if nothing has changed in 3 months, you leave.");
   }
 
-  // Stay and improve
-  if (archetype === "Early Career Crisis") {
-    return [
-      "Separate short‑term survival from long‑term direction: write down what you need from the next 12 months versus the next 5 years.",
-      "Talk with someone a few years ahead of you about how their early career unfolded, including detours and wrong turns.",
-      "Choose one small, low‑risk experiment at work or outside of it that moves you toward work that feels more like you.",
-    ];
-  }
-
-  return [
-    "Identify the 2–3 specific frictions at work that drain you the most today.",
-    "Schedule one conversation (manager, mentor, or peer) about changing scope, support, or expectations.",
-    "Experiment with small boundaries or routines for 2–4 weeks, then reassess how you feel.",
-  ];
+  return steps;
 }
 
 function getRealityCheck(
@@ -468,6 +441,11 @@ export default function Home() {
   const [expenses, setExpenses] = React.useState<number | "">("");
   const [severance, setSeverance] = React.useState<number | "">("");
   const [income, setIncome] = React.useState<number | "">("");
+  const [age, setAge] = React.useState<number | "">("");
+  const [burnoutDriver, setBurnoutDriver] = React.useState<BurnoutDriver>("Not sure");
+  const [partnerIncome, setPartnerIncome] = React.useState<number | "">("");
+  const [familySupport, setFamilySupport] = React.useState<number | "">("");
+  const [unemploymentBenefits, setUnemploymentBenefits] = React.useState<number | "">("");
   const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
@@ -475,13 +453,26 @@ export default function Home() {
   const parsedExpenses = typeof expenses === "number" ? expenses : parseFloat(expenses || "0");
   const parsedSeverance = typeof severance === "number" ? severance : parseFloat(severance || "0");
   const parsedIncome = typeof income === "number" ? income : parseFloat(income || "0");
+  const parsedPartnerIncome = typeof partnerIncome === "number" ? partnerIncome : parseFloat(partnerIncome || "0");
+  const parsedFamilySupport = typeof familySupport === "number" ? familySupport : parseFloat(familySupport || "0");
+  const parsedUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
+
+  const monthlySafetyNet = parsedPartnerIncome + parsedFamilySupport + parsedUnemployment;
+  const effectiveExpenses = Math.max(0, parsedExpenses - monthlySafetyNet);
 
   const runway =
-    parsedExpenses > 0 ? (parsedSavings + parsedSeverance) / parsedExpenses : 0;
+    effectiveExpenses > 0 ? (parsedSavings + parsedSeverance) / effectiveExpenses :
+    parsedExpenses > 0 && monthlySafetyNet >= parsedExpenses ? 999 : 0;
 
   const monthlySurplus = parsedIncome - parsedExpenses;
-  const runwayStay3 = parsedExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 3) / parsedExpenses : 0;
-  const runwayStay6 = parsedExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 6) / parsedExpenses : 0;
+  const runwayStay3 = effectiveExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 3) / effectiveExpenses : runway;
+  const runwayStay6 = effectiveExpenses > 0 ? (parsedSavings + parsedSeverance + Math.max(0, monthlySurplus) * 6) / effectiveExpenses : runway;
+  const scenarioDelta = runwayStay6 - runway;
+  const scenarioInsight = scenarioDelta > 8
+    ? `Staying 6 more months nearly doubles your runway. That's significant leverage.`
+    : scenarioDelta >= 4
+    ? `Six more months buys you ${scenarioDelta.toFixed(1)} extra months of freedom. Worth considering.`
+    : `The financial upside of staying is modest. This decision is about more than money.`;
 
   const burnoutScore =
     (burnout + (10 - satisfaction) + (10 - growth)) / 3;
@@ -505,10 +496,10 @@ export default function Home() {
     recommendedPath,
     archetype
   );
-  const nextSteps = getNextSteps(recommendedPath, archetype, runway);
+  const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses);
   const strategy = getStrategy(recommendedPath);
   const careerTrajectory = getCareerTrajectory(satisfaction, growth);
-  const burnoutDriverInsight = getBurnoutDriverInsight("Not sure");
+  const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
   const decisionConfidence = getDecisionConfidence(
     archetype,
     financialRisk,
@@ -516,8 +507,8 @@ export default function Home() {
     recommendedPath,
     runway
   );
-  const normalizationParagraph = getNormalizationParagraph("");
-  const careerTimingPerspective = getCareerTimingPerspective("");
+  const normalizationParagraph = getNormalizationParagraph(age);
+  const careerTimingPerspective = getCareerTimingPerspective(age);
 
   const whyParts: string[] = [situationSummary];
   if (burnoutDriverInsight) whyParts.push(burnoutDriverInsight);
@@ -577,14 +568,22 @@ export default function Home() {
         ? `${runway.toFixed(1)} months of runway`
         : "runway not yet calculated";
 
-    const shareText = [
-      "My Exit Profile from The Exit Calculator:",
+    const totalCash = parsedSavings + parsedSeverance;
+    const totalCashText = totalCash > 0
+      ? `$${Math.round(totalCash).toLocaleString()} total cash (savings${parsedSeverance > 0 ? ` + $${Math.round(parsedSeverance).toLocaleString()} severance` : ""})`
+      : null;
+
+    const shareLines = [
+      "My Exit Profile from The Quit Calculator:",
       profileLabel,
       `Career health: ${careerHealthLabel}`,
       `Runway: ${runwayText}`,
+      ...(totalCashText ? [`Est. cash available: ${totalCashText}`] : []),
       `Burnout: ${burnoutScore.toFixed(1)}/10`,
       `Recommended next move: ${recommendedPath}`,
-    ].join(" | ");
+    ];
+
+    const shareText = shareLines.join(" | ");
 
     try {
       await navigator.clipboard.writeText(shareText);
@@ -699,6 +698,107 @@ export default function Home() {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-800">
+                Age
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={18}
+                  max={70}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
+                  placeholder="Your age"
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                Helps contextualize where you are in your career arc. Optional.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-800">
+                What is driving your burnout?
+              </label>
+              <select
+                value={burnoutDriver}
+                onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400 focus:bg-white"
+              >
+                <option value="Not sure">Not sure</option>
+                <option value="Workload / hours">Workload / hours</option>
+                <option value="Lack of meaning">Lack of meaning</option>
+                <option value="Toxic culture">Toxic culture</option>
+                <option value="Lack of growth">Lack of growth</option>
+                <option value="Compensation mismatch">Compensation mismatch</option>
+              </select>
+              <p className="text-xs text-gray-400">
+                The root cause shapes which moves actually help.
+              </p>
+            </div>
+
+            <details className="group rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-zinc-800 select-none">
+                Safety net (optional)
+                <span className="ml-2 text-xs text-gray-400">partner income, family support, unemployment</span>
+              </summary>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    Partner / spouse monthly income
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={partnerIncome}
+                      onChange={(e) => setPartnerIncome(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400">Income that continues if you leave your job.</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    Family support (monthly)
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={familySupport}
+                      onChange={(e) => setFamilySupport(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400">Reliable monthly help from family you can count on, not hope for.</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-zinc-700">
+                    Unemployment benefits (monthly)
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={unemploymentBenefits}
+                      onChange={(e) => setUnemploymentBenefits(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-8 py-2 text-sm text-zinc-900 shadow-inner outline-none ring-0 transition focus:border-zinc-400"
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400">Only if you are eligible and plan to file. Typically 40-60% of salary, capped by state.</p>
+                </div>
+              </div>
+            </details>
+
             <div className="space-y-4">
               <div className="space-y-1">
                 <p className="text-xs font-medium text-zinc-700">
@@ -775,18 +875,6 @@ export default function Home() {
                 <p className="mt-1.5 text-xs leading-relaxed text-zinc-600">
                   {getArchetypeExplanation(archetype)}
                 </p>
-                <button
-                  type="button"
-                  onClick={handleShareProfile}
-                  className="mt-2 inline-flex items-center rounded-md border border-zinc-200 bg-transparent px-2 py-0.5 text-sm text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-100/50 hover:text-zinc-700"
-                >
-                  Share my exit profile
-                </button>
-                {copied && (
-                  <p className="mt-0.5 text-[10px] text-gray-400">
-                    Copied to clipboard.
-                  </p>
-                )}
               </section>
 
               <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
@@ -794,25 +882,18 @@ export default function Home() {
                   Snapshot
                 </h3>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div>
                   <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                       Runway
                     </p>
-                    <p className={`mt-0.5 text-xl font-semibold ${runwayColor}`}>
-                      {runway ? runway.toFixed(1) : "—"}
+                    <p className={`mt-0.5 text-xl font-semibold ${runway >= 999 ? "text-emerald-600" : runwayColor}`}>
+                      {runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "—"}
                     </p>
-                    <p className="text-xs text-gray-400">months</p>
-                  </div>
-
-                  <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Burnout score
-                    </p>
-                    <p className={`mt-0.5 text-xl font-semibold ${burnoutColor}`}>
-                      {burnoutScore.toFixed(1)}
-                    </p>
-                    <p className="text-xs text-gray-400">out of 10</p>
+                    <p className="text-xs text-gray-400">{runway >= 999 ? "safety net covers expenses" : "months"}</p>
+                    {monthlySafetyNet > 0 && runway < 999 && (
+                      <p className="mt-1 text-[10px] text-emerald-600">+${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net factored in</p>
+                    )}
                   </div>
                 </div>
 
@@ -845,18 +926,21 @@ export default function Home() {
                     <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                       Quit now
                     </p>
-                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runway)}`}>
-                      {runway ? runway.toFixed(1) : "—"}
+                    <p className={`mt-0.5 text-lg font-semibold ${runway >= 999 ? "text-emerald-600" : scenarioColors(runway)}`}>
+                      {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
                     </p>
-                    <p className="text-xs text-gray-400">months</p>
+                    <p className="text-xs text-gray-400">{runway >= 999 ? "covered" : "months"}</p>
                   </div>
                   <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                       Stay 3 mo.
                     </p>
-                    <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runwayStay3)}`}>
-                      {runwayStay3 ? runwayStay3.toFixed(1) : "—"}
+                    <p className={`mt-0.5 text-lg font-semibold ${runwayStay3 >= 999 ? "text-emerald-600" : scenarioColors(runwayStay3)}`}>
+                      {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
                     </p>
+                    {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                      <p className="text-[10px] font-medium text-emerald-600">+{(runwayStay3 - runway).toFixed(1)}</p>
+                    )}
                     <p className="text-xs text-gray-400">months</p>
                   </div>
                   <div className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-zinc-200">
@@ -866,23 +950,15 @@ export default function Home() {
                     <p className={`mt-0.5 text-lg font-semibold ${scenarioColors(runwayStay6)}`}>
                       {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
                     </p>
+                    {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                      <p className="text-[10px] font-medium text-emerald-600">+{(runwayStay6 - runway).toFixed(1)}</p>
+                    )}
                     <p className="text-xs text-gray-400">months</p>
                   </div>
                 </div>
+                <p className="text-xs font-medium text-zinc-700">{scenarioInsight}</p>
                 <p className="text-[11px] leading-relaxed text-gray-400">
                   Assumes you save the difference between income and costs each month.
-                </p>
-              </section>
-
-              <section className="space-y-2 border-t border-dashed border-zinc-200 pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                  Career trajectory
-                </h3>
-                <p className="text-xs font-medium text-zinc-800">
-                  {careerTrajectory.label}
-                </p>
-                <p className="text-xs leading-relaxed text-zinc-600">
-                  {careerTrajectory.interpretation}
                 </p>
               </section>
 
@@ -935,6 +1011,7 @@ export default function Home() {
                 trust, your own judgement, and, if needed, professional advice.
               </p>
 
+              <p className="text-center text-[11px] text-zinc-400">Think a friend needs to see their number?</p>
               <button
                 type="button"
                 onClick={handleShareProfile}
