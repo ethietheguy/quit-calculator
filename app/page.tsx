@@ -614,6 +614,23 @@ export default function Home() {
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // Live read based on slider combination
+  const sliderRead = (() => {
+    const highBurnout = burnout >= 7;
+    const lowBurnout = burnout <= 3;
+    const highSat = satisfaction >= 7;
+    const lowSat = satisfaction <= 3;
+
+    if (highBurnout && lowSat) return "That's a rough combination. Let's see if the money works.";
+    if (highBurnout && highSat) return "Burned out but you like what you do. That changes things.";
+    if (highBurnout) return "Your burnout is high. The financial picture will matter a lot.";
+    if (lowBurnout && lowSat) return "Not burned out, but not happy either. Worth exploring why.";
+    if (lowBurnout && highSat) return "You're in a good spot. What brought you here?";
+    if (lowSat) return "Low satisfaction is a slow drain. Let's see what your options look like.";
+    if (burnout >= 5 && satisfaction <= 4) return "Something's off. Let's figure out how much room you have to move.";
+    return null;
+  })();
+
   const inputClass = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-8 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
   const inputClassNoDollar = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
 
@@ -676,6 +693,9 @@ export default function Home() {
               className="w-full accent-slate-400" />
             <p className="text-xs text-slate-400">1 = actively miserable, 10 = genuinely fulfilled</p>
           </div>
+          {sliderRead && (
+            <p className="mt-1 text-center text-sm italic text-slate-400">{sliderRead}</p>
+          )}
         </section>
 
         {/* ── Card 2: Your financial picture ── */}
