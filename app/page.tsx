@@ -147,48 +147,6 @@ function getHeadline(path: RecommendedPath): string {
   }
 }
 
-type Strategy = "Reset" | "Search while employed" | "Career pivot" | "Stay and optimize";
-
-function getStrategy(path: RecommendedPath): Strategy {
-  switch (path) {
-    case "Consider taking a break or quitting":
-      return "Reset";
-    case "Search while employed":
-      return "Search while employed";
-    case "Build more runway before quitting":
-      return "Career pivot";
-    case "Stay and improve":
-      return "Stay and optimize";
-  }
-}
-
-type TrajectoryLabel = "Compounding" | "Plateauing" | "Declining";
-
-function getCareerTrajectory(satisfaction: number, growth: number): {
-  label: TrajectoryLabel;
-  interpretation: string;
-} {
-  const score = satisfaction + growth; // 2–20
-  if (score >= 14) {
-    return {
-      label: "Compounding",
-      interpretation:
-        "Your satisfaction and growth scores suggest you are building momentum. The main tension may be sustainability or fit rather than trajectory.",
-    };
-  }
-  if (score >= 8) {
-    return {
-      label: "Plateauing",
-      interpretation:
-        "Your scores point to a plateau — not a crisis, but a signal to be more intentional about what comes next and where you want to grow.",
-    };
-  }
-  return {
-    label: "Declining",
-    interpretation:
-      "Low satisfaction and growth together suggest a declining trajectory. This deserves attention rather than being pushed aside indefinitely.",
-  };
-}
 
 function getBurnoutDriverInsight(burnoutDriver: BurnoutDriver): string | null {
   switch (burnoutDriver) {
@@ -297,43 +255,6 @@ function getCareerHealthLabel(score: number): "Strong trajectory" | "Plateau" | 
   if (score >= 10) return "Strong trajectory";
   if (score >= 4) return "Plateau";
   return "Declining";
-}
-
-function getCareerHealthExplanation(score: number, label: string): string {
-  if (label === "Strong trajectory") {
-    return `Your career health score is ${score.toFixed(
-      1
-    )}, which suggests you are generally moving in a good direction even if certain days feel heavy.`;
-  }
-
-  if (label === "Plateau") {
-    return `Your career health score is ${score.toFixed(
-      1
-    )}, which looks like a plateau — not a crisis, but a signal to be more intentional about what comes next.`;
-  }
-
-  // Declining
-  return `Your career health score is ${score.toFixed(
-    1
-  )}, which points to a declining trajectory that deserves attention rather than being pushed aside indefinitely.`;
-}
-
-function getArchetypeExplanation(archetype: Archetype): string {
-  switch (archetype) {
-    case "Burned-Out Achiever":
-      return "You have pushed hard and built financial options, but your current pace and load are no longer sustainable.";
-    case "Trapped Professional":
-      return "You feel overextended at work while money still feels tight, which can make every choice feel higher stakes.";
-    case "Restless Optimizer":
-      return "Things are stable enough, but the work itself is not satisfying your curiosity, ambition, or values.";
-    case "Early Career Crisis":
-      return "You are early in your career, but the mix of burnout, low satisfaction, and stalled growth is asking for a reset in direction or support.";
-    case "Comfortable Drifter":
-      return "Day to day feels manageable, yet growth is muted, and it may be time to engage more intentionally with where you are heading.";
-    case "None":
-    default:
-      return "You do not cleanly match one profile, which is normal — use this as a starting point for reflection, not a label.";
-  }
 }
 
 function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: number, satisfaction: number, growth: number, income: number, expenses: number, burnoutDriver: BurnoutDriver, burnoutScore: number, age: number | ""): string[] {
@@ -554,7 +475,6 @@ export default function Home() {
   const ongoingSafetyNet = parsedPartnerIncome + parsedFamilySupport; // after unemployment expires
   const phase1Expenses = Math.max(0, parsedExpenses - monthlySafetyNet); // first 6 months
   const phase2Expenses = Math.max(0, parsedExpenses - ongoingSafetyNet); // after unemployment ends
-  const effectiveExpenses = phase2Expenses; // used for display/scenarios after benefits expire
 
   // Runway accounts for unemployment benefits lasting only 6 months
   const totalCash = parsedSavings + parsedSeverance;
@@ -606,10 +526,6 @@ export default function Home() {
   const archetype = getArchetype(burnoutScore, satisfaction, growth, runway, financialRisk);
   const careerHealthScore = satisfaction + growth - burnout;
   const careerHealthLabel = getCareerHealthLabel(careerHealthScore);
-  const careerHealthExplanation = getCareerHealthExplanation(
-    careerHealthScore,
-    careerHealthLabel
-  );
   const recommendedPath = getRecommendedPath(financialRisk, burnoutLevel, runway);
   const headline = getHeadline(recommendedPath);
   const situationSummary = getSituationSummary(
@@ -621,8 +537,6 @@ export default function Home() {
     archetype
   );
   const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses, burnoutDriver, burnoutScore, age);
-  const strategy = getStrategy(recommendedPath);
-  const careerTrajectory = getCareerTrajectory(satisfaction, growth);
   const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
   const decisionConfidence = getDecisionConfidence(
     archetype,
@@ -643,46 +557,9 @@ export default function Home() {
 
   const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
 
-  const financialColorClasses =
-    financialRisk === "Low"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-      : financialRisk === "Moderate"
-      ? "border-amber-200 bg-amber-50 text-amber-800"
-      : "border-rose-200 bg-rose-50 text-rose-800";
-
-  const burnoutColorClasses =
-    burnoutLevel === "Low"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-      : burnoutLevel === "Moderate"
-      ? "border-amber-200 bg-amber-50 text-amber-800"
-      : "border-rose-200 bg-rose-50 text-rose-800";
   const hasFinancialInputs = parsedExpenses > 0;
   const hasAnySavings = parsedSavings > 0 || parsedSeverance > 0;
   const showLiveRunway = hasAnySavings || hasFinancialInputs;
-  const runwayColor =
-    !runway || !Number.isFinite(runway)
-      ? "text-zinc-900"
-      : runway > 18
-      ? "text-emerald-600"
-      : runway >= 6
-      ? "text-amber-600"
-      : "text-rose-600";
-  const burnoutColor =
-    burnoutScore > 7
-      ? "text-rose-600"
-      : burnoutScore >= 4
-      ? "text-amber-600"
-      : "text-emerald-600";
-
-  const scenarioColors = (months: number) =>
-    !months || !Number.isFinite(months)
-      ? "text-zinc-900"
-      : months > 18
-      ? "text-emerald-600"
-      : months >= 6
-      ? "text-amber-600"
-      : "text-rose-600";
-
   const [copied, setCopied] = React.useState(false);
 
   const handleShareProfile = async () => {
@@ -699,12 +576,17 @@ export default function Home() {
       ? `$${Math.round(totalCash).toLocaleString()} total cash (savings${parsedSeverance > 0 ? ` + $${Math.round(parsedSeverance).toLocaleString()} severance` : ""})`
       : null;
 
+    const netWorthText = parsedNetWorth > 0
+      ? `Net worth: $${Math.round(parsedNetWorth).toLocaleString()}`
+      : null;
+
     const shareLines = [
       "My Exit Profile from The Quit Calculator:",
       profileLabel,
       `Career health: ${careerHealthLabel}`,
       `Runway: ${runwayText}`,
       ...(totalCashText ? [`Est. cash available: ${totalCashText}`] : []),
+      ...(netWorthText ? [netWorthText] : []),
       `Burnout: ${burnoutScore.toFixed(1)}/10`,
       `Recommended next move: ${recommendedPath}`,
     ];
@@ -768,32 +650,11 @@ export default function Home() {
           </p>
         </header>
 
-        {/* ── Act 1: Core inputs ── */}
+        {/* ── Card 1: How you're feeling ── */}
         <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-200">Liquid savings</label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
-                <input type="number" min={0} value={savings}
-                  onChange={(e) => setSavings(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={inputClass} placeholder="e.g. 25,000" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-200">Monthly living costs</label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
-                <input type="number" min={0} value={expenses}
-                  onChange={(e) => setExpenses(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={inputClass} placeholder="e.g. 3,500" />
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-1.5">
             <p className="text-sm font-medium text-slate-200">
-              Burnout level{" "}
+              How burned out are you?{" "}
               <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
                 {burnout}/10
               </span>
@@ -802,6 +663,52 @@ export default function Home() {
               onChange={(e) => setBurnout(Number(e.target.value))}
               className="w-full accent-slate-400" />
             <p className="text-xs text-slate-400">1 = deeply rested, 10 = completely depleted</p>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-slate-200">
+              How do you feel about your job?{" "}
+              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
+                {satisfaction}/10
+              </span>
+            </p>
+            <input type="range" min={1} max={10} value={satisfaction}
+              onChange={(e) => setSatisfaction(Number(e.target.value))}
+              className="w-full accent-slate-400" />
+            <p className="text-xs text-slate-400">1 = actively miserable, 10 = genuinely fulfilled</p>
+          </div>
+        </section>
+
+        {/* ── Card 2: Your financial picture ── */}
+        <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-200">Savings you could live on</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                <input type="number" min={0} value={savings}
+                  onChange={(e) => setSavings(e.target.value === "" ? "" : Number(e.target.value))}
+                  className={inputClass} placeholder="e.g. 25,000" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-200">What you spend per month</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                <input type="number" min={0} value={expenses}
+                  onChange={(e) => setExpenses(e.target.value === "" ? "" : Number(e.target.value))}
+                  className={inputClass} placeholder="e.g. 3,500" />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-200">What you earn per month</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+              <input type="number" min={0} value={income}
+                onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass} placeholder="e.g. 6,200" />
+            </div>
+            <p className="text-xs text-slate-400">After taxes. Enables scenario modeling.</p>
           </div>
         </section>
 
@@ -814,43 +721,32 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── Act 2: Refine your picture (progressive disclosure) ── */}
+        {/* ── Sharpen the picture (progressive disclosure) ── */}
         <details className="group rounded-2xl bg-slate-800">
           <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-slate-200 sm:px-7">
             <span className="inline-flex items-center gap-2">
-              Add more detail
-              <span className="text-xs text-slate-400">income, severance, age, career factors</span>
+              Sharpen the picture
+              <span className="text-xs text-slate-400">growth, age, severance, net worth</span>
               <svg className="h-4 w-4 text-slate-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             </span>
           </summary>
           <div className="space-y-5 px-5 pb-6 sm:px-7">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-slate-200">
+                Are you still learning and growing?{" "}
+                <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
+                  {growth}/10
+                </span>
+              </p>
+              <input type="range" min={1} max={10} value={growth}
+                onChange={(e) => setGrowth(Number(e.target.value))}
+                className="w-full accent-slate-400" />
+              <p className="text-xs text-slate-400">1 = completely stalled, 10 = accelerating</p>
+            </div>
+
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Monthly take-home pay</label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
-                  <input type="number" min={0} value={income}
-                    onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
-                    className={inputClass} placeholder="e.g. 6,200" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Severance (optional)</label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
-                  <input type="number" min={0} value={severance}
-                    onChange={(e) => setSeverance(e.target.value === "" ? "" : Number(e.target.value))}
-                    className={inputClass} placeholder="0" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Age</label>
-                <input type="number" min={18} max={70} value={age}
-                  onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={inputClassNoDollar} placeholder="Your age" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Burnout driver</label>
+                <label className="block text-sm font-medium text-slate-200">What&apos;s wearing you down?</label>
                 <select value={burnoutDriver}
                   onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
                   className={inputClassNoDollar}>
@@ -862,35 +758,33 @@ export default function Home() {
                   <option value="Compensation mismatch">Compensation mismatch</option>
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Age</label>
+                <input type="number" min={18} max={70} value={age}
+                  onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
+                  className={inputClassNoDollar} placeholder="Your age" />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">Optional. Used for context, not runway.</span></label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
-                <input type="number" min={0} value={netWorth}
-                  onChange={(e) => setNetWorth(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={inputClass} placeholder="e.g. 150,000" />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Expected severance</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                  <input type="number" min={0} value={severance}
+                    onChange={(e) => setSeverance(e.target.value === "" ? "" : Number(e.target.value))}
+                    className={inputClass} placeholder="0" />
+                </div>
               </div>
-              <p className="text-xs text-slate-400">Investments, retirement accounts, equity, and other assets beyond cash savings.</p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-300">
-                  Job satisfaction <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">{satisfaction}/10</span>
-                </p>
-                <input type="range" min={1} max={10} value={satisfaction}
-                  onChange={(e) => setSatisfaction(Number(e.target.value))}
-                  className="w-full accent-slate-400" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-300">
-                  Growth at work <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">{growth}/10</span>
-                </p>
-                <input type="range" min={1} max={10} value={growth}
-                  onChange={(e) => setGrowth(Number(e.target.value))}
-                  className="w-full accent-slate-400" />
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">Context only.</span></label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                  <input type="number" min={0} value={netWorth}
+                    onChange={(e) => setNetWorth(e.target.value === "" ? "" : Number(e.target.value))}
+                    className={inputClass} placeholder="e.g. 150,000" />
+                </div>
+                <p className="text-xs text-slate-400">Investments, retirement accounts, equity, and other assets beyond cash savings.</p>
               </div>
             </div>
 
@@ -954,11 +848,6 @@ export default function Home() {
                     {monthlySafetyNet > 0 && (
                       <span className="text-emerald-400"> · +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net</span>
                     )}
-                  </p>
-                )}
-                {parsedNetWorth > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    ${Math.round(parsedNetWorth).toLocaleString()} total net worth beyond liquid savings
                   </p>
                 )}
               </div>
