@@ -536,6 +536,7 @@ export default function Home() {
   const [partnerIncome, setPartnerIncome] = React.useState<number | "">("");
   const [familySupport, setFamilySupport] = React.useState<number | "">("");
   const [unemploymentBenefits, setUnemploymentBenefits] = React.useState<number | "">("");
+  const [netWorth, setNetWorth] = React.useState<number | "">("");
   const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
@@ -546,6 +547,7 @@ export default function Home() {
   const parsedPartnerIncome = typeof partnerIncome === "number" ? partnerIncome : parseFloat(partnerIncome || "0");
   const parsedFamilySupport = typeof familySupport === "number" ? familySupport : parseFloat(familySupport || "0");
   const parsedUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
+  const parsedNetWorth = typeof netWorth === "number" ? netWorth : parseFloat(netWorth || "0");
 
   const UNEMPLOYMENT_MONTHS = 6;
   const monthlySafetyNet = parsedPartnerIncome + parsedFamilySupport + parsedUnemployment;
@@ -862,6 +864,17 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">(optional — for context, not used in runway)</span></label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+                <input type="number" min={0} value={netWorth}
+                  onChange={(e) => setNetWorth(e.target.value === "" ? "" : Number(e.target.value))}
+                  className={inputClass} placeholder="e.g. 150,000" />
+              </div>
+              <p className="text-xs text-slate-400">Retirement accounts, investments, property equity — everything beyond your liquid savings</p>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <p className="text-xs font-medium text-slate-300">
@@ -943,6 +956,11 @@ export default function Home() {
                     )}
                   </p>
                 )}
+                {parsedNetWorth > 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    ${Math.round(parsedNetWorth).toLocaleString()} total net worth beyond liquid savings
+                  </p>
+                )}
               </div>
 
               {/* Divider */}
@@ -974,6 +992,16 @@ export default function Home() {
                 <span className="font-medium text-white">{coreTensionParts.lead}</span>
                 {coreTensionParts.rest && <span className="text-slate-300"> {coreTensionParts.rest}</span>}
               </p>
+
+              {/* Net worth context — not part of runway, but reframes risk */}
+              {parsedNetWorth > 0 && (
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                  Beyond your liquid runway, you have ~${Math.round(parsedNetWorth).toLocaleString()} in long-term savings.
+                  {parsedNetWorth > parsedExpenses * 24
+                    ? " That's a meaningful backstop — your worst-case scenario has a floor, even if tapping those funds should be a last resort."
+                    : " It's not enough to change the math, but it's worth remembering you're not starting from zero."}
+                </p>
+              )}
 
               {/* Inline reality check */}
               <p className="mt-4 text-xs italic leading-relaxed text-slate-500">
