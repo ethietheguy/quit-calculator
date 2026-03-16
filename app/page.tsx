@@ -581,7 +581,7 @@ export default function Home() {
       : null;
 
     const shareLines = [
-      "My Exit Profile from The Quit Calculator:",
+      "My Exit Profile from Quit Calculator:",
       profileLabel,
       `Career health: ${careerHealthLabel}`,
       `Runway: ${runwayText}`,
@@ -641,7 +641,7 @@ export default function Home() {
     runway >= 6 ? "text-amber-400" : "text-rose-400";
 
   return (
-    <div className="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100 sm:py-12">
+    <div className="min-h-screen bg-slate-900 px-4 py-6 font-sans text-slate-100 sm:py-8">
       {/* Persistent runway bar — always pinned to top */}
       {showLiveRunway && (
         <div className="fixed inset-x-0 top-0 z-50 bg-slate-800/95 shadow-lg shadow-black/20 backdrop-blur-sm">
@@ -655,16 +655,12 @@ export default function Home() {
       )}
       {/* Spacer to offset fixed bar */}
       {showLiveRunway && <div className="h-10" />}
-      <main className="mx-auto w-full max-w-2xl space-y-8">
+      <main className="mx-auto w-full max-w-2xl space-y-6">
 
         {/* ── Header ── */}
-        <header className="text-center">
-          <h1 className="font-[family-name:var(--font-serif)] text-4xl tracking-tight text-white sm:text-5xl">
-            The Quit Calculator
-          </h1>
-          <p className="mt-3 text-sm text-slate-400 sm:text-base">
-            A clear-eyed look at your finances, burnout, and next move.
-          </p>
+        <header>
+          <h1 className="text-xl font-semibold tracking-tight text-white">Quit Calculator</h1>
+          <p className="mt-1 text-sm text-slate-400">Should you quit? Let&apos;s find out.</p>
         </header>
 
         {/* ── Card 1: How you're feeling ── */}
