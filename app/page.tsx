@@ -905,9 +905,9 @@ export default function Home() {
                       To reach 12 months of runway, you need{" "}
                       <span className="font-semibold text-white">${Math.round(savingsGap).toLocaleString()}</span> more in savings.
                     </p>
-                  ) : runway >= 12 && runway < 999 ? (
+                  ) : runway >= 12 ? (
                     <p className="text-xs text-emerald-400">
-                      You already have 12+ months of runway.
+                      {runway >= 999 ? "Your safety net has you covered." : "You already have 12+ months of runway."}
                     </p>
                   ) : null}
                   {safeQuitDate && monthlySurplus > 0 && (
@@ -982,20 +982,20 @@ export default function Home() {
                 <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
                   {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
                 </p>
-                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay3 < 999 && (
                   <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay3 - runway).toFixed(1)}</p>
                 )}
-                <p className="text-xs text-slate-500">months</p>
+                <p className="text-xs text-slate-500">{runwayStay3 >= 999 ? "covered" : "months"}</p>
               </div>
               <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
                 <p className="text-[11px] font-medium text-slate-500">If you stay 6 months</p>
-                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                  {runwayStay6 ? runwayStay6.toFixed(1) : "—"}
+                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 >= 999 ? "text-emerald-400" : runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                  {runwayStay6 >= 999 ? "✓" : runwayStay6 ? runwayStay6.toFixed(1) : "—"}
                 </p>
-                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && (
+                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay6 < 999 && (
                   <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay6 - runway).toFixed(1)}</p>
                 )}
-                <p className="text-xs text-slate-500">months</p>
+                <p className="text-xs text-slate-500">{runwayStay6 >= 999 ? "covered" : "months"}</p>
               </div>
             </div>
             <p className="text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
