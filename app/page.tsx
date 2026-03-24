@@ -518,6 +518,22 @@ export default function Home() {
     ? `Six more months buys you ${scenarioDelta.toFixed(1)} extra months of freedom. Worth considering.`
     : `The financial upside of staying is modest. This decision is about more than money.`;
 
+  // New calculations: savings target, safe quit date, readiness tier
+  const TARGET_RUNWAY_MONTHS = 12;
+  const savingsTarget = parsedExpenses > 0 ? parsedExpenses * TARGET_RUNWAY_MONTHS : 0;
+  const savingsGap = Math.max(0, savingsTarget - totalCash);
+  const monthsToTarget = monthlySurplus > 0 && savingsGap > 0
+    ? Math.ceil(savingsGap / monthlySurplus)
+    : monthlySurplus <= 0 && savingsGap > 0
+    ? null // spending more than earning, can't reach target
+    : 0; // already there
+  const safeQuitDate = (() => {
+    if (monthsToTarget === null || monthsToTarget === 0) return null;
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthsToTarget);
+    return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  })();
+
   const burnoutScore =
     (burnout + (10 - satisfaction) + (10 - growth)) / 3;
 
@@ -553,6 +569,19 @@ export default function Home() {
   if (careerTimingPerspective) whyParts.push(careerTimingPerspective);
   const whyParagraph = whyParts.join(" ");
 
+  // Readiness tier: one clear label instead of separate risk badges
+  type ReadinessTier = "Build More Runway" | "Prepare to Leave" | "Clear to Go";
+  const readinessTier: ReadinessTier = (() => {
+    if (runway >= 12 || (runway >= 999)) return "Clear to Go";
+    if (runway >= 6 && (burnoutLevel === "Moderate" || burnoutLevel === "High") && savingsGap <= 20000) return "Prepare to Leave";
+    return "Build More Runway";
+  })();
+
+  const readinessTierColor =
+    readinessTier === "Clear to Go" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
+    readinessTier === "Prepare to Leave" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
+    "border-rose-700/50 bg-rose-900/30 text-rose-300";
+
   const realityCheck = getRealityCheck(archetype, careerHealthLabel, financialRisk, burnoutDriver);
 
   const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
@@ -581,7 +610,7 @@ export default function Home() {
       : null;
 
     const shareLines = [
-      "My Exit Profile from Quit Calculator:",
+      "My Runway Assessment:",
       profileLabel,
       `Career health: ${careerHealthLabel}`,
       `Runway: ${runwayText}`,
@@ -659,8 +688,8 @@ export default function Home() {
 
         {/* ── Header ── */}
         <header className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Quit Calculator</h1>
-          <p className="mt-1.5 text-sm text-slate-400">Should you quit? Let&apos;s find out.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
+          <p className="mt-1.5 text-sm text-slate-400">See how ready you really are.</p>
         </header>
 
         {/* ── Card 1: How you're feeling ── */}
@@ -868,20 +897,45 @@ export default function Home() {
                 )}
               </div>
 
+              {/* Savings target + safe quit date */}
+              {parsedExpenses > 0 && (
+                <div className="mt-4 space-y-1.5 text-center">
+                  {savingsGap > 0 ? (
+                    <p className="text-xs text-slate-400">
+                      To reach 12 months of runway, you need{" "}
+                      <span className="font-semibold text-white">${Math.round(savingsGap).toLocaleString()}</span> more in savings.
+                    </p>
+                  ) : runway >= 12 && runway < 999 ? (
+                    <p className="text-xs text-emerald-400">
+                      You already have 12+ months of runway.
+                    </p>
+                  ) : null}
+                  {safeQuitDate && monthlySurplus > 0 && (
+                    <p className="text-xs text-slate-400">
+                      At your current savings rate, you&apos;ll reach that by{" "}
+                      <span className="font-semibold text-white">{safeQuitDate}</span>.
+                    </p>
+                  )}
+                  {monthsToTarget === null && savingsGap > 0 && (
+                    <p className="text-xs text-rose-400">
+                      You&apos;re spending more than you earn — the gap grows each month without income changes.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Divider */}
               <div className="my-6 border-t border-slate-700/50" />
 
-              {/* Verdict: headline leads, archetype is a badge */}
-              <h2 className="text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
+              {/* Readiness tier + headline */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
+              </div>
+              <h2 className="mt-3 text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {archetype !== "None" && (
                   <span className="rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-xs font-medium text-slate-300">{archetype}</span>
                 )}
-                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  financialRisk === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
-                  financialRisk === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
-                  "border-rose-700/50 bg-rose-900/30 text-rose-300"
-                }`}>{financialRisk} financial risk</span>
                 <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                   burnoutLevel === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
                   burnoutLevel === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
@@ -962,7 +1016,21 @@ export default function Home() {
                     </div>
                   ))}
                   <div className="mt-2 flex items-center justify-between border-t border-slate-700/50 pt-3">
-                    <p className="text-[11px] text-slate-500">Confidence: {decisionConfidence.level}</p>
+                    <div className="text-[11px] text-slate-500">
+                      <p>Confidence: {decisionConfidence.level}</p>
+                      {(() => {
+                        const missing: string[] = [];
+                        if (!parsedIncome) missing.push("income");
+                        if (!parsedSeverance && severance === "") missing.push("severance");
+                        if (age === "") missing.push("age");
+                        if (burnoutDriver === "Not sure") missing.push("burnout driver");
+                        if (!parsedPartnerIncome && !parsedFamilySupport && !parsedUnemployment) missing.push("safety net");
+                        if (missing.length > 0) return (
+                          <p className="mt-0.5">Adding {missing.join(", ")} would sharpen this.</p>
+                        );
+                        return null;
+                      })()}
+                    </div>
                     <button type="button" onClick={handleShareProfile}
                       className="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
                       {copied ? "Copied!" : "Copy my summary"}

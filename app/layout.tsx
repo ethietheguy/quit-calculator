@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quit Calculator",
-  description: "Should you quit? Let's find out.",
+  title: "Runway",
+  description: "See how ready you really are.",
 };
 
 export default function RootLayout({
