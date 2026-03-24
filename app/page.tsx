@@ -823,7 +823,8 @@ export default function Home() {
     setGateSubmitting(true);
     setGateError("");
     try {
-      const res = await fetch("/api/capture", {
+      // Fire-and-forget: attempt capture but always unlock
+      fetch("/api/capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -832,14 +833,11 @@ export default function Home() {
           runway: runway >= 999 ? "covered" : runway.toFixed(1),
           archetype,
         }),
-      });
-      if (res.ok) {
-        setGateUnlocked(true);
-      } else {
-        setGateError("Something went wrong. Try again.");
-      }
+      }).catch(() => {});
+      setGateUnlocked(true);
     } catch {
-      setGateError("Something went wrong. Try again.");
+      // Unlock even if something unexpected happens
+      setGateUnlocked(true);
     } finally {
       setGateSubmitting(false);
     }
