@@ -257,74 +257,144 @@ function getCareerHealthLabel(score: number): "Strong trajectory" | "Plateau" | 
   return "Declining";
 }
 
-function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: number, satisfaction: number, growth: number, income: number, expenses: number, burnoutDriver: BurnoutDriver, burnoutScore: number, age: number | ""): string[] {
-  const steps: string[] = [];
+function getYourMove(path: RecommendedPath, burnoutDriver: BurnoutDriver, runway: number, satisfaction: number, growth: number, income: number, expenses: number): { thisWeek: string; thisMonth: string; beforeYouDecide: string } {
   const monthlySurplus = income - expenses;
-  const parsedAge = typeof age === "number" ? age : 0;
 
-  // Step 1: The specific thing to do THIS WEEK
+  // THIS WEEK — one specific action
+  let thisWeek: string;
   if (path === "Consider taking a break or quitting") {
-    if (runway >= 18) {
-      steps.push("This week: tell one person you trust that you're seriously considering leaving. Not to get advice — to say it out loud and see how it feels. You have the money. The question is whether you have the permission you're waiting for from yourself.");
-    } else {
-      steps.push("This week: block 2 hours and write down what your first 30 days after quitting would actually look like. Not a fantasy — the real version. If you can picture it clearly and it doesn't terrify you, that's a signal.");
-    }
+    thisWeek = "Tell one person you trust that you're seriously considering leaving. Not for advice — to hear yourself say it out loud.";
   } else if (path === "Search while employed") {
-    steps.push("This week: reach out to 3 people who have jobs you find interesting and ask them one question: 'What's the worst part of your role that nobody talks about?' You're not job hunting yet — you're gathering intelligence so you don't jump into something equally wrong.");
+    thisWeek = "Reach out to 2 people in roles you find interesting. Ask: 'What's the worst part nobody talks about?' You're gathering intelligence, not job hunting.";
   } else if (path === "Build more runway before quitting") {
     if (monthlySurplus > 0) {
-      const targetMonths = Math.max(0, 6 - runway);
-      const monthsToTarget = targetMonths > 0 ? Math.ceil((targetMonths * expenses) / monthlySurplus) : 0;
-      steps.push(`This week: open a separate savings account and set up a $${Math.round(monthlySurplus * 0.7).toLocaleString()} auto-transfer. In ${monthsToTarget || "a few"} months you'll have 6 months of runway, and that changes everything about how trapped you feel.`);
+      thisWeek = `Set up a separate savings account with a $${Math.round(monthlySurplus * 0.7).toLocaleString()}/mo auto-transfer. Automate the runway you need.`;
     } else {
-      steps.push("This week: list every subscription and recurring charge you have. Most people find $200-400/month they forgot about. That's not budgeting — it's buying yourself time.");
+      thisWeek = "List every subscription and recurring charge. Most people find $200–400/mo they forgot about. That's not budgeting — it's buying time.";
     }
   } else {
-    steps.push("This week: write down the 3 specific things that would need to change for you to feel good about staying. Then ask yourself honestly — are any of them in your control? If yes, start with the smallest one.");
+    thisWeek = "Write down the 3 things that would need to change for you to feel good about staying. Be honest about which ones are in your control.";
   }
 
-  // Step 2: Week 2 — the real career move based on what's actually wrong
+  // THIS MONTH — the career move
+  let thisMonth: string;
   if (burnoutDriver === "Toxic culture") {
-    steps.push("Week 2: The environment is the problem, not you. No amount of boundary-setting fixes a fundamentally broken culture. Focus your energy on getting out — the same work at a healthy company will feel like a different career.");
+    thisMonth = "Start planning your exit. No amount of boundary-setting fixes a broken culture. The same work at a healthy company will feel like a different career.";
   } else if (burnoutDriver === "Lack of meaning") {
-    if (satisfaction <= 4) {
-      steps.push("Week 2: You're not burned out from too much work — you're burned out from work that doesn't matter to you. Before changing jobs, get clear on what 'meaningful' actually means for you. Is it impact? Autonomy? Creative expression? The answer changes where you should look.");
-    } else {
-      steps.push("Week 2: The meaning gap is real but it doesn't always require a career change. Sometimes it's a project, a side thing, or a team switch. Try volunteering your skills somewhere that matters to you for 5 hours a week and see if that changes the math.");
-    }
+    thisMonth = satisfaction <= 4
+      ? "Get clear on what 'meaningful' actually means to you — impact, autonomy, creative expression. The answer changes where you should look."
+      : "Volunteer your skills somewhere that matters for 5 hours a week. See if that changes the equation before making a bigger move.";
   } else if (burnoutDriver === "Workload / hours") {
-    steps.push("Week 2: Run one experiment — say no to something you would normally say yes to. If the world doesn't end, do it again. If your boss punishes boundaries, that tells you everything you need to know about whether this is fixable.");
+    thisMonth = "Run one experiment: say no to something you'd normally accept. If nothing breaks, do it again. If your boss punishes boundaries, that's your answer.";
   } else if (burnoutDriver === "Lack of growth") {
-    if (parsedAge > 0 && parsedAge <= 30) {
-      steps.push("Week 2: You're early enough that a lateral move to a faster-growing company can restart your trajectory without starting over. Look for smaller companies where you'd be slightly over your head — that's where growth lives.");
-    } else {
-      steps.push("Week 2: Growth stalls usually mean you've outgrown the role, not that you've peaked. Talk to your manager about what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.");
-    }
+    thisMonth = "Ask your manager what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.";
   } else if (burnoutDriver === "Compensation mismatch") {
-    steps.push("Week 2: Get your market number. Use levels.fyi, Glassdoor, or ask peers directly. If you're more than 15% below market, you don't have a motivation problem — you have an information problem. Armed with data, either negotiate or leave knowing you tried.");
+    thisMonth = "Get your market number — levels.fyi, Glassdoor, or ask peers directly. If you're 15%+ below market, you have a data problem, not a motivation problem.";
   } else {
-    if (satisfaction <= 3 && growth <= 3) {
-      steps.push("Week 2: Low satisfaction and low growth together isn't a rough patch — it's a slow decline. Start mapping what you'd do differently if money weren't a factor, then find the version of that which pays.");
-    } else {
-      steps.push("Week 2: Your signals are mixed, which usually means the problem is specific, not existential. Keep a 2-week log of what drains you vs. what energizes you. The pattern will point you somewhere more useful than a gut feeling.");
+    thisMonth = satisfaction <= 3 && growth <= 3
+      ? "Map what you'd do if money weren't a factor, then find the version that pays. Low satisfaction and low growth together isn't a rough patch — it's a slow decline."
+      : "Keep a 2-week log of what drains you vs. what energizes you. The pattern will point somewhere more useful than a gut feeling.";
+  }
+
+  // BEFORE YOU DECIDE — the financial grounding
+  let beforeYouDecide: string;
+  if (runway >= 999) {
+    beforeYouDecide = "Your safety net covers you. The risk isn't financial — it's staying too long because you can afford to. Set a decision deadline and honor it.";
+  } else if (runway >= 12) {
+    beforeYouDecide = "You have over a year of runway. Stop using money as the reason to stay. The real question: what are you afraid happens if you actually leave?";
+  } else if (monthlySurplus > 0 && runway < 12) {
+    beforeYouDecide = `Every month you stay adds ${(monthlySurplus / expenses).toFixed(1)} months of runway. Pick your target number and work backward to a quit date.`;
+  } else if (runway < 3) {
+    beforeYouDecide = "With less than 3 months of runway, don't quit without an offer or a concrete plan. That's not fear — it's strategy.";
+  } else {
+    beforeYouDecide = "Get to 6 months of runway. That's the threshold where most people stop making fear-based decisions.";
+  }
+
+  return { thisWeek, thisMonth, beforeYouDecide };
+}
+
+function getWhatMovesTheNeedle(
+  runway: number,
+  expenses: number,
+  income: number,
+  severance: number,
+  partnerIncome: number,
+  hasHealthCoverage: boolean,
+  adjustedRunway: number | null,
+  runwayStay3: number,
+  runwayStay6: number,
+  safeQuitDate: string | null,
+): string[] {
+  const insights: { text: string; impact: number }[] = [];
+  const monthlySurplus = income - expenses;
+
+  // Staying longer
+  if (monthlySurplus > 0 && runway < 12 && runway > 0 && runwayStay6 < 999) {
+    const delta = runwayStay6 - runway;
+    if (delta >= 2) {
+      insights.push({
+        text: `Staying 6 more months adds ${delta.toFixed(1)} months of runway — taking you from ${runway.toFixed(1)} to ${runwayStay6.toFixed(1)} months.`,
+        impact: delta
+      });
     }
   }
 
-  // Step 3: Weeks 3–4 — the money move
-  if (runway >= 999) {
-    steps.push("Weeks 3–4: Your safety net covers your expenses. That's rare and powerful. The risk for you isn't financial — it's staying too long because you can afford to be comfortable. Set a decision deadline and honor it.");
-  } else if (income > 0 && expenses > 0 && monthlySurplus > 0 && runway < 12) {
-    const monthsPerMonth = (monthlySurplus / expenses).toFixed(1);
-    steps.push(`Weeks 3–4: Every month you stay adds ${monthsPerMonth} months to your runway. That means staying 3 more months buys you ${(monthlySurplus * 3 / expenses).toFixed(0)} months of freedom. Decide what your target number is and work backward to your quit date.`);
-  } else if (runway >= 12) {
-    steps.push("Weeks 3–4: You have over a year of runway. Stop using money as the reason to stay — it's not the real blocker anymore. The real question is: what are you afraid happens if you actually leave?");
-  } else if (runway < 3) {
-    steps.push("Weeks 3–4: With less than 3 months of runway, do not quit without an offer or a concrete plan. That's not cowardice — it's strategy. Desperation is the worst negotiating position.");
-  } else {
-    steps.push("Weeks 3–4: Your financial position is workable but not comfortable. Focus on getting to 6 months of runway — that's the threshold where most people stop making fear-based decisions.");
+  // Safe quit date
+  if (safeQuitDate && monthlySurplus > 0 && runway < 12) {
+    insights.push({
+      text: `At your current savings rate, you hit 12 months of runway by ${safeQuitDate}. That's your safe quit date.`,
+      impact: 8
+    });
   }
 
-  return steps;
+  // Health insurance
+  if (!hasHealthCoverage && adjustedRunway !== null && adjustedRunway < 999 && runway > 0) {
+    const delta = runway - adjustedRunway;
+    if (delta > 0.5) {
+      insights.push({
+        text: `Health insurance (~$500/mo) reduces your runway from ${runway.toFixed(1)} to ${adjustedRunway.toFixed(1)} months. Factor this in.`,
+        impact: delta
+      });
+    }
+  }
+
+  // Spending reduction
+  if (expenses > 0 && runway > 0 && runway < 12) {
+    const reducedExpenses = expenses * 0.85;
+    const reducedRunway = (income > 0 ? (income - expenses) : 0) > 0 ? runway : ((typeof severance === "number" ? severance : 0) + 0) / reducedExpenses; // simplified
+    const extraMonths = ((expenses - reducedExpenses) / reducedExpenses) * runway;
+    if (extraMonths > 1) {
+      insights.push({
+        text: `Cutting 15% of expenses ($${Math.round(expenses * 0.15).toLocaleString()}/mo) adds roughly ${extraMonths.toFixed(0)} months to your runway.`,
+        impact: extraMonths
+      });
+    }
+  }
+
+  // Partner income
+  if (partnerIncome === 0 && expenses > 0 && runway > 0 && runway < 18) {
+    insights.push({
+      text: `With no partner income, your runway is entirely self-funded. Even $2,000/mo from a partner would stretch it significantly.`,
+      impact: 3
+    });
+  }
+
+  // Severance
+  if (severance > 0 && expenses > 0) {
+    const severanceMonths = severance / expenses;
+    if (severanceMonths >= 1) {
+      insights.push({
+        text: `Your severance alone covers ${severanceMonths.toFixed(1)} months of expenses.`,
+        impact: severanceMonths
+      });
+    }
+  }
+
+  // Sort by impact, return top 3
+  return insights
+    .sort((a, b) => b.impact - a.impact)
+    .slice(0, 3)
+    .map(i => i.text);
 }
 
 function getRealityCheck(
@@ -462,6 +532,10 @@ export default function Home() {
   const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
+  const [gateEmail, setGateEmail] = React.useState("");
+  const [gateUnlocked, setGateUnlocked] = React.useState(false);
+  const [gateSubmitting, setGateSubmitting] = React.useState(false);
+  const [gateError, setGateError] = React.useState("");
   const parsedSavings = typeof savings === "number" ? savings : parseFloat(savings || "0");
   const parsedExpenses = typeof expenses === "number" ? expenses : parseFloat(expenses || "0");
   const parsedSeverance = typeof severance === "number" ? severance : parseFloat(severance || "0");
@@ -572,7 +646,8 @@ export default function Home() {
     recommendedPath,
     archetype
   );
-  const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses, burnoutDriver, burnoutScore, age);
+  const yourMove = getYourMove(recommendedPath, burnoutDriver, runway, satisfaction, growth, parsedIncome, parsedExpenses);
+  const needleMovers = getWhatMovesTheNeedle(runway, parsedExpenses, parsedIncome, parsedSeverance, parsedPartnerIncome, hasHealthCoverage, adjustedRunway, runwayStay3, runwayStay6, safeQuitDate);
   const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
   // Field-count confidence score
   const optionalFieldLabels: { filled: boolean; label: string }[] = [
@@ -655,6 +730,41 @@ export default function Home() {
     readinessTier === "Prepare to Leave" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
     "border-rose-700/50 bg-rose-900/30 text-rose-300";
 
+  // Option comparison: leave now vs stay 3 vs stay 6
+  type OptionKey = "now" | "stay3" | "stay6";
+  const riskForRunway = (r: number): RiskLevel => r >= 12 ? "Low" : r >= 6 ? "Moderate" : "High";
+  const tradeoffForOption = (key: OptionKey, r: number): string => {
+    if (key === "now") {
+      if (r >= 12) return "Reclaim your time now — you have the cushion.";
+      if (r >= 6) return "Freedom now, but limited margin for error.";
+      return "Freedom now, but tight money and high pressure.";
+    }
+    if (key === "stay3") {
+      const added = (runwayStay3 - runway).toFixed(1);
+      if (runwayStay3 >= 12 && runway < 12) return `Crosses the 12-month threshold (+${added} mo).`;
+      return `+${added} months of cushion for 3 months of patience.`;
+    }
+    // stay6
+    const added = (runwayStay6 - runway).toFixed(1);
+    if (runway >= 12) return `Diminishing returns — more money, less life.`;
+    if (runwayStay6 >= 12) return `Gets you to safety (+${added} mo), but 6 more months.`;
+    return `+${added} months of cushion, still below 12-month target.`;
+  };
+  const recommendedOption: OptionKey = (() => {
+    if (readinessTier === "Clear to Go") return "now";
+    if (readinessTier === "Build More Runway") {
+      return runwayStay3 >= 12 ? "stay3" : "stay6";
+    }
+    // Prepare to Leave
+    if (runway >= 9) return "now";
+    return runwayStay3 >= 9 ? "stay3" : "stay6";
+  })();
+  const options: { key: OptionKey; label: string; runway: number; risk: RiskLevel; tradeoff: string; recommended: boolean }[] = [
+    { key: "now", label: "Leave now", runway, risk: riskForRunway(runway), tradeoff: tradeoffForOption("now", runway), recommended: recommendedOption === "now" },
+    { key: "stay3", label: "Stay 3 months", runway: runwayStay3, risk: riskForRunway(runwayStay3), tradeoff: tradeoffForOption("stay3", runwayStay3), recommended: recommendedOption === "stay3" },
+    { key: "stay6", label: "Stay 6 months", runway: runwayStay6, risk: riskForRunway(runwayStay6), tradeoff: tradeoffForOption("stay6", runwayStay6), recommended: recommendedOption === "stay6" },
+  ];
+
   const realityCheck = getRealityCheck(archetype, careerHealthLabel, financialRisk, burnoutDriver);
 
   const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
@@ -701,6 +811,37 @@ export default function Home() {
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const handleGateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gateEmail || !gateEmail.includes("@")) {
+      setGateError("Enter a valid email address.");
+      return;
+    }
+    setGateSubmitting(true);
+    setGateError("");
+    try {
+      const res = await fetch("/api/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: gateEmail,
+          readinessTier,
+          runway: runway >= 999 ? "covered" : runway.toFixed(1),
+          archetype,
+        }),
+      });
+      if (res.ok) {
+        setGateUnlocked(true);
+      } else {
+        setGateError("Something went wrong. Try again.");
+      }
+    } catch {
+      setGateError("Something went wrong. Try again.");
+    } finally {
+      setGateSubmitting(false);
     }
   };
 
@@ -861,13 +1002,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Live runway hero (standalone when no results yet) ── */}
+        {/* ── Empty state ── */}
         {!hasFinancialInputs && (
-          <section className="rounded-2xl bg-slate-800 p-5 text-center sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
-            <p className="mt-2 text-6xl font-bold tabular-nums text-slate-600 sm:text-7xl">—</p>
-            <p className="mt-1 text-sm text-slate-400">Enter your savings and monthly costs above</p>
-          </section>
+          <p className="py-4 text-center text-sm text-slate-500">Add your financial details above to see your assessment.</p>
         )}
 
         {/* ── Sharpen the picture (progressive disclosure) ── */}
@@ -972,233 +1109,204 @@ export default function Home() {
         {hasFinancialInputs && (
           <section className="space-y-4">
 
-            {/* Visual break between inputs and results */}
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700" /></div>
-              <div className="relative flex justify-center">
-                <span className="bg-slate-900 px-4 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Career Runway Assessment</span>
-              </div>
-            </div>
-            <p className="text-center text-xs text-slate-500">Based on what you entered, here&apos;s what your situation looks like.</p>
-
-            {/* ── 1. YOUR NUMBERS — runway, savings target, safe quit date ── */}
+            {/* ── 1. EXECUTIVE SUMMARY — the answer ── */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-              <div className="text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
-                <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
-                  {runway >= 999 ? "Covered" : runway === 0 ? "0" : runway.toFixed(1)}
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  {runway >= 999 ? "Your safety net covers your monthly expenses" : runway === 0 ? "No runway — expenses entered but no savings" : "months of financial runway"}
-                </p>
-                {runway < 999 && runway > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    ${Math.round(totalCash).toLocaleString()} savings{parsedSeverance > 0 ? " + severance" : ""} · ${Math.round(parsedExpenses).toLocaleString()}/mo costs
-                    {monthlySafetyNet > 0 && (
-                      <span className="text-emerald-400"> · +${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net</span>
-                    )}
-                  </p>
-                )}
+              <div className="flex items-center gap-3">
+                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
               </div>
+              <p className="mt-3 text-lg font-semibold text-white sm:text-xl">{recommendedPath}</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-400">{headline}</p>
 
-              {/* Health insurance impact */}
-              {adjustedRunway !== null && adjustedRunway < 999 && (
-                <p className="mt-3 text-center text-xs text-amber-400">
-                  Without employer health coverage, your estimated monthly costs increase by ~$500, reducing your runway to{" "}
-                  <span className="font-semibold">{adjustedRunway.toFixed(1)} months</span>.
-                </p>
-              )}
-
-              {/* Savings target + safe quit date */}
-              {parsedExpenses > 0 && (
-                <div className="mt-4 space-y-1.5 text-center">
-                  {savingsGap > 0 ? (
-                    <p className="text-xs text-slate-400">
-                      To reach 12 months of runway, you need{" "}
-                      <span className="font-semibold text-white">${Math.round(savingsGap).toLocaleString()}</span> more in savings.
-                    </p>
-                  ) : runway >= 12 ? (
-                    <p className="text-xs text-emerald-400">
-                      {runway >= 999 ? "Your safety net has you covered." : "You already have 12+ months of runway."}
-                    </p>
-                  ) : null}
-                  {safeQuitDate && monthlySurplus > 0 && (
-                    <p className="text-xs text-slate-400">
-                      At your current savings rate, you&apos;ll reach that by{" "}
-                      <span className="font-semibold text-white">{safeQuitDate}</span>.
-                    </p>
-                  )}
-                  {monthsToTarget === null && savingsGap > 0 && (
-                    <p className="text-xs text-rose-400">
-                      You&apos;re spending more than you earn — your runway is depleting.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Net worth context */}
-              {parsedNetWorth > 0 && (
-                <p className="mt-3 text-center text-xs leading-relaxed text-slate-400">
-                  Beyond your liquid runway, you have ~${Math.round(parsedNetWorth).toLocaleString()} in long-term savings.
-                  {parsedNetWorth > parsedExpenses * 24
-                    ? " That's a meaningful backstop — your worst-case scenario has a floor, even if tapping those funds should be a last resort."
-                    : " It's not enough to change the math, but it's worth remembering you're not starting from zero."}
-                </p>
-              )}
-            </div>
-
-            {/* ── 2. YOUR READINESS — tier badge + explanation ── */}
-            <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
-                {archetype !== "None" && (
-                  <span className="rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-xs font-medium text-slate-300">{archetype}</span>
-                )}
-                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  burnoutLevel === "Low" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
-                  burnoutLevel === "Moderate" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
-                  "border-rose-700/50 bg-rose-900/30 text-rose-300"
-                }`}>{burnoutLevel} burnout</span>
-                {getCareerPhaseLabel(age) && (
-                  <span className="rounded-full border border-blue-700/50 bg-blue-900/30 px-3 py-1 text-xs font-semibold text-blue-300">{getCareerPhaseLabel(age)}</span>
-                )}
-              </div>
-              <h2 className="mt-3 text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
-              <p className="mt-2 text-sm text-slate-400">{tierExplanation}</p>
-
-              {/* Core tension */}
-              <p className="mt-4 text-sm leading-relaxed">
-                <span className="font-medium text-white">{coreTensionParts.lead}</span>
-                {coreTensionParts.rest && <span className="text-slate-300"> {coreTensionParts.rest}</span>}
-              </p>
-            </div>
-
-            {/* ── 3. WHAT'S WORKING / WHAT TO WATCH — strengths + risk flags ── */}
-            {(strengths.length > 0 || riskFlags.length > 0) && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {strengths.length > 0 && (
-                  <div className="rounded-xl border border-emerald-800/40 bg-emerald-900/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">What&apos;s working</p>
-                    <ul className="mt-2 space-y-2">
-                      {strengths.slice(0, 4).map((s) => (
-                        <li key={s} className="flex gap-2 text-xs leading-relaxed text-slate-300">
-                          <span className="mt-0.5 text-emerald-400">+</span>
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {riskFlags.length > 0 && (
-                  <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-rose-400">What to watch</p>
-                    <ul className="mt-2 space-y-2">
-                      {riskFlags.slice(0, 4).map((r) => (
-                        <li key={r} className="flex gap-2 text-xs leading-relaxed text-slate-300">
-                          <span className="mt-0.5 text-rose-400">!</span>
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── 4. IF YOU STAY — scenario comparison ── */}
-            <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">If you stay</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
-                  <p className="text-[11px] font-medium text-slate-500">Quit today</p>
-                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runway >= 999 ? "text-emerald-400" : runway > 18 ? "text-emerald-400" : runway >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                    {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
-                  </p>
-                  <p className="text-xs text-slate-500">{runway >= 999 ? "covered" : "months"}</p>
-                </div>
-                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
-                  <p className="text-[11px] font-medium text-slate-500">Stay 3 months</p>
-                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                    {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
-                  </p>
-                  {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay3 < 999 && (
-                    <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay3 - runway).toFixed(1)}</p>
-                  )}
-                  <p className="text-xs text-slate-500">{runwayStay3 >= 999 ? "covered" : "months"}</p>
-                </div>
-                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
-                  <p className="text-[11px] font-medium text-slate-500">Stay 6 months</p>
-                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 >= 999 ? "text-emerald-400" : runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                    {runwayStay6 >= 999 ? "✓" : runwayStay6 ? runwayStay6.toFixed(1) : "—"}
-                  </p>
-                  {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay6 < 999 && (
-                    <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay6 - runway).toFixed(1)}</p>
-                  )}
-                  <p className="text-xs text-slate-500">{runwayStay6 >= 999 ? "covered" : "months"}</p>
-                </div>
-              </div>
-              <p className="mt-3 text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
-            </div>
-
-            {/* ── 5. YOUR NEXT 30 DAYS — action items ── */}
-            <div className="rounded-xl bg-slate-800">
-              <button type="button" onClick={() => toggleSection("steps")}
-                className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                Your next 30 days
-                <svg className={`h-4 w-4 text-slate-400 transition ${openSections["steps"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-              </button>
-              {openSections["steps"] && (
-                <div className="space-y-3 px-5 pb-5">
-                  {nextSteps.map((step, i) => (
-                    <div key={step} className="flex gap-3 text-xs leading-relaxed text-slate-300">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-200">{i + 1}</span>
-                      <span>{step}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* ── 6. ASSESSMENT CONFIDENCE ── */}
-            <div className="rounded-xl bg-slate-800 px-5 py-4">
-              <div className="flex items-center justify-between">
+              {/* Key numbers */}
+              <div className={`mt-5 grid gap-4 border-t border-slate-700 pt-5 ${safeQuitDate && monthlySurplus > 0 && runway < 12 ? "grid-cols-2" : "grid-cols-1"}`}>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Assessment confidence:{" "}
-                    <span className={
-                      fieldConfidence === "High" ? "text-emerald-400" :
-                      fieldConfidence === "Medium" ? "text-amber-400" :
-                      "text-rose-400"
-                    }>{fieldConfidence}</span>
+                  <p className={`text-2xl font-bold tabular-nums ${runwayColorClass}`}>
+                    {runway >= 999 ? "Covered" : runway === 0 ? "0" : runway.toFixed(1)}
                   </p>
-                  <p className="mt-1 text-[11px] text-slate-500">{confidenceExplanation}</p>
+                  <p className="text-xs text-slate-500">{runway >= 999 ? "expenses covered" : "months of runway"}</p>
                 </div>
-                <button type="button" onClick={handleShareProfile}
-                  className="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
-                  {copied ? "Copied!" : "Copy summary"}
-                </button>
+                {safeQuitDate && monthlySurplus > 0 && runway < 12 && (
+                  <div>
+                    <p className="text-2xl font-bold text-white">{safeQuitDate.split(" ")[0].slice(0, 3)}&nbsp;&apos;{safeQuitDate.split(" ")[1]?.slice(2)}</p>
+                    <p className="text-xs text-slate-500">12-month runway by</p>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* ── 7. HOW THIS WAS CALCULATED — transparency ── */}
-            <div className="rounded-xl bg-slate-800">
-              <button type="button" onClick={() => toggleSection("analysis")}
-                className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                How this was calculated
-                <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-              </button>
-              {openSections["analysis"] && (
-                <div className="space-y-4 px-5 pb-5 text-xs leading-relaxed text-slate-300">
-                  <p>{whyParagraph}</p>
-                  {normalizationParagraph && <p className="italic text-slate-400">{normalizationParagraph}</p>}
-                  <p className="text-slate-400">{realityCheck}</p>
-                </div>
+              {/* Biggest lever — one line */}
+              {needleMovers.length > 0 && (
+                <p className="mt-4 text-xs leading-relaxed text-slate-400">
+                  <span className="font-semibold text-slate-300">Biggest lever:</span>{" "}{needleMovers[0]}
+                </p>
               )}
             </div>
+
+            {/* ── 2. EMAIL GATE ── */}
+            {!gateUnlocked ? (
+              <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 sm:p-7">
+                <p className="text-sm font-semibold text-white">See your options side by side.</p>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Leave now vs. stay 3 or 6 months — with the tradeoffs, your action plan, and what changes the math.
+                </p>
+                <form onSubmit={handleGateSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="email"
+                    value={gateEmail}
+                    onChange={(e) => setGateEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="flex-1 rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none transition focus:border-slate-400 focus:bg-slate-700"
+                  />
+                  <button
+                    type="submit"
+                    disabled={gateSubmitting}
+                    className="whitespace-nowrap rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
+                  >
+                    {gateSubmitting ? "Sending..." : "Unlock full assessment"}
+                  </button>
+                </form>
+                {gateError && <p className="mt-2 text-xs text-rose-400">{gateError}</p>}
+                <p className="mt-3 text-[11px] text-slate-500">No spam. Just your results.</p>
+              </div>
+            ) : (
+              <>
+                {/* ── 3. YOUR OPTIONS — the comparison that justifies the product ── */}
+                {(() => {
+                  const allSameRisk = options.every((o) => o.risk === options[0].risk);
+                  return (
+                    <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your options</p>
+                      <div className="mt-4 space-y-3">
+                        {options.map((opt) => (
+                          <div
+                            key={opt.key}
+                            className={`rounded-xl border p-4 ${opt.recommended ? "border-emerald-700/60 bg-emerald-950/20" : "border-slate-700 bg-slate-800/50"}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm font-semibold ${opt.recommended ? "text-emerald-300" : "text-slate-200"}`}>{opt.label}</p>
+                                {opt.recommended && (
+                                  <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-[10px] font-bold text-emerald-300">Recommended</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <p className={`text-lg font-bold tabular-nums ${opt.risk === "Low" ? "text-emerald-400" : opt.risk === "Moderate" ? "text-amber-400" : "text-rose-400"}`}>
+                                  {opt.runway >= 999 ? "Covered" : `${opt.runway.toFixed(1)} mo`}
+                                </p>
+                                {!allSameRisk && (
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${opt.risk === "Low" ? "bg-emerald-900/40 text-emerald-400" : opt.risk === "Moderate" ? "bg-amber-900/40 text-amber-400" : "bg-rose-900/40 text-rose-400"}`}>
+                                    {opt.risk}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{opt.tradeoff}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── 4. YOUR MOVE — the plan ── */}
+                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your move</p>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">This week</p>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.thisWeek}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">This month</p>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.thisMonth}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">Before you decide</p>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.beforeYouDecide}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── 4. WHAT CHANGES THE MATH — levers ranked by impact ── */}
+                {needleMovers.length > 1 && (
+                  <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">What changes the math</p>
+                    <div className="mt-3 space-y-2">
+                      {needleMovers.map((insight) => (
+                        <div key={insight} className="flex gap-2.5 text-sm leading-relaxed">
+                          <span className="mt-0.5 text-slate-500">→</span>
+                          <span className="text-slate-200">{insight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 5. THE DEEPER PICTURE — archetype + core tension ── */}
+                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                  {archetype !== "None" && (
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{archetype}</p>
+                  )}
+                  <p className={`${archetype !== "None" ? "mt-2" : ""} text-sm leading-relaxed`}>
+                    <span className="font-medium text-white">{coreTensionParts.lead}</span>
+                    {coreTensionParts.rest && <span className="text-slate-400"> {coreTensionParts.rest}</span>}
+                  </p>
+                </div>
+
+                {/* ── 6. STRENGTHS + RISKS (collapsed) ── */}
+                {(strengths.length > 0 || riskFlags.length > 0) && (
+                  <div className="rounded-xl bg-slate-800">
+                    <button type="button" onClick={() => toggleSection("risks")}
+                      className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
+                      What&apos;s working &amp; what to watch
+                      <svg className={`h-4 w-4 text-slate-400 transition ${openSections["risks"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {openSections["risks"] && (
+                      <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+                        {strengths.length > 0 && (
+                          <div>
+                            {strengths.slice(0, 3).map((s) => (
+                              <p key={s} className="mt-2 flex gap-2 text-xs leading-relaxed text-slate-300">
+                                <span className="text-emerald-400">+</span>
+                                <span>{s}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        {riskFlags.length > 0 && (
+                          <div>
+                            {riskFlags.slice(0, 3).map((r) => (
+                              <p key={r} className="mt-2 flex gap-2 text-xs leading-relaxed text-slate-300">
+                                <span className="text-rose-400">!</span>
+                                <span>{r}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── 7. ASSUMPTIONS & LIMITS (collapsed) ── */}
+                <div className="rounded-xl bg-slate-800">
+                  <button type="button" onClick={() => toggleSection("analysis")}
+                    className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
+                    Assumptions &amp; limits
+                    <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                  {openSections["analysis"] && (
+                    <div className="space-y-3 px-5 pb-5 text-xs leading-relaxed text-slate-400">
+                      <p className="text-slate-300">{realityCheck}</p>
+                      <p>{confidenceExplanation}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Disclaimer */}
             <p className="text-center text-[11px] leading-relaxed text-slate-500">
-              This is a first‑pass decision aid, not financial or career advice.
+              This is a decision aid, not financial or career advice.
             </p>
           </section>
         )}
