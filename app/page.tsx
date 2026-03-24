@@ -762,7 +762,13 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
-          <p className="mt-1.5 text-sm text-slate-400">See how long you can last — and what to do next.</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Exit Readiness Assessment</p>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-400">
+            You already know something needs to change. This tool helps you see whether the money supports the move — and what to do next.
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            No account required. Your data stays in your browser.
+          </p>
         </header>
 
         {/* ── Card 1: How you're feeling ── */}
@@ -794,6 +800,31 @@ export default function Home() {
           {sliderRead && (
             <p className="mt-1 text-center text-sm italic text-slate-400">{sliderRead}</p>
           )}
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-slate-200">
+              Are you still learning and growing?{" "}
+              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
+                {growth}/10
+              </span>
+            </p>
+            <input type="range" min={1} max={10} value={growth}
+              onChange={(e) => setGrowth(Number(e.target.value))}
+              className="w-full accent-slate-400" />
+            <p className="text-xs text-slate-400">1 = completely stalled, 10 = accelerating</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-200">What&apos;s wearing you down most?</label>
+            <select value={burnoutDriver}
+              onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
+              className={inputClassNoDollar}>
+              <option value="Not sure">Not sure yet</option>
+              <option value="Workload / hours">Workload / hours</option>
+              <option value="Lack of meaning">Lack of meaning</option>
+              <option value="Toxic culture">Toxic culture</option>
+              <option value="Lack of growth">Lack of growth</option>
+              <option value="Compensation mismatch">Compensation mismatch</option>
+            </select>
+          </div>
         </section>
 
         {/* ── Card 2: Your financial picture ── */}
@@ -844,47 +875,18 @@ export default function Home() {
           <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-slate-200 sm:px-7">
             <span className="inline-flex items-center gap-2">
               Sharpen the picture
-              <span className="text-xs text-slate-400">growth, age, severance, net worth</span>
+              <span className="text-xs text-slate-400">age, severance, net worth, safety net</span>
               <svg className="h-4 w-4 text-slate-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             </span>
           </summary>
           <div className="space-y-5 px-5 pb-6 sm:px-7">
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-slate-200">
-                Are you still learning and growing?{" "}
-                <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
-                  {growth}/10
-                </span>
-              </p>
-              <input type="range" min={1} max={10} value={growth}
-                onChange={(e) => setGrowth(Number(e.target.value))}
-                className="w-full accent-slate-400" />
-              <p className="text-xs text-slate-400">1 = completely stalled, 10 = accelerating</p>
-            </div>
-
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">What&apos;s wearing you down?</label>
-                <select value={burnoutDriver}
-                  onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
-                  className={inputClassNoDollar}>
-                  <option value="Not sure">Select what applies most</option>
-                  <option value="Workload / hours">Workload / hours</option>
-                  <option value="Lack of meaning">Lack of meaning</option>
-                  <option value="Toxic culture">Toxic culture</option>
-                  <option value="Lack of growth">Lack of growth</option>
-                  <option value="Compensation mismatch">Compensation mismatch</option>
-                </select>
-              </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-200">Age</label>
                 <input type="number" min={18} max={70} value={age}
                   onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
                   className={inputClassNoDollar} placeholder="Your age" />
               </div>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-200">Expected severance</label>
                 <div className="relative">

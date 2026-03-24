@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Runway — Career Runway Planner",
-  description: "Enter your real finances and your honest burnout level. Get a structured assessment of your career runway, risk factors, and smartest next move.",
+  title: "Runway — Career Exit Readiness Assessment",
+  description: "A structured assessment of your financial runway, burnout risk, and smartest next move. Built for professionals who need clarity, not a quiz.",
 };
 
 export default function RootLayout({
