@@ -283,45 +283,45 @@ function getNextSteps(path: RecommendedPath, archetype: Archetype, runway: numbe
     steps.push("This week: write down the 3 specific things that would need to change for you to feel good about staying. Then ask yourself honestly — are any of them in your control? If yes, start with the smallest one.");
   }
 
-  // Step 2: The real career move based on what's actually wrong
+  // Step 2: Week 2 — the real career move based on what's actually wrong
   if (burnoutDriver === "Toxic culture") {
-    steps.push("The environment is the problem, not you. No amount of boundary-setting fixes a fundamentally broken culture. Focus your energy on getting out — the same work at a healthy company will feel like a different career.");
+    steps.push("Week 2: The environment is the problem, not you. No amount of boundary-setting fixes a fundamentally broken culture. Focus your energy on getting out — the same work at a healthy company will feel like a different career.");
   } else if (burnoutDriver === "Lack of meaning") {
     if (satisfaction <= 4) {
-      steps.push("You're not burned out from too much work — you're burned out from work that doesn't matter to you. Before changing jobs, get clear on what 'meaningful' actually means for you. Is it impact? Autonomy? Creative expression? The answer changes where you should look.");
+      steps.push("Week 2: You're not burned out from too much work — you're burned out from work that doesn't matter to you. Before changing jobs, get clear on what 'meaningful' actually means for you. Is it impact? Autonomy? Creative expression? The answer changes where you should look.");
     } else {
-      steps.push("The meaning gap is real but it doesn't always require a career change. Sometimes it's a project, a side thing, or a team switch. Try volunteering your skills somewhere that matters to you for 5 hours a week and see if that changes the math.");
+      steps.push("Week 2: The meaning gap is real but it doesn't always require a career change. Sometimes it's a project, a side thing, or a team switch. Try volunteering your skills somewhere that matters to you for 5 hours a week and see if that changes the math.");
     }
   } else if (burnoutDriver === "Workload / hours") {
-    steps.push("Before quitting, run one experiment: say no to something this week that you would normally say yes to. If the world doesn't end, do it again. If your boss punishes boundaries, that tells you everything you need to know about whether this is fixable.");
+    steps.push("Week 2: Run one experiment — say no to something you would normally say yes to. If the world doesn't end, do it again. If your boss punishes boundaries, that tells you everything you need to know about whether this is fixable.");
   } else if (burnoutDriver === "Lack of growth") {
     if (parsedAge > 0 && parsedAge <= 30) {
-      steps.push("You're early enough that a lateral move to a faster-growing company can restart your trajectory without starting over. Look for smaller companies where you'd be slightly over your head — that's where growth lives.");
+      steps.push("Week 2: You're early enough that a lateral move to a faster-growing company can restart your trajectory without starting over. Look for smaller companies where you'd be slightly over your head — that's where growth lives.");
     } else {
-      steps.push("Growth stalls usually mean you've outgrown the role, not that you've peaked. Talk to your manager about what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.");
+      steps.push("Week 2: Growth stalls usually mean you've outgrown the role, not that you've peaked. Talk to your manager about what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.");
     }
   } else if (burnoutDriver === "Compensation mismatch") {
-    steps.push("Get your market number. Use levels.fyi, Glassdoor, or ask peers directly. If you're more than 15% below market, you don't have a motivation problem — you have an information problem. Armed with data, either negotiate or leave knowing you tried.");
+    steps.push("Week 2: Get your market number. Use levels.fyi, Glassdoor, or ask peers directly. If you're more than 15% below market, you don't have a motivation problem — you have an information problem. Armed with data, either negotiate or leave knowing you tried.");
   } else {
     if (satisfaction <= 3 && growth <= 3) {
-      steps.push("Low satisfaction and low growth together isn't a rough patch — it's a slow decline. Start mapping what you'd do differently if money weren't a factor, then find the version of that which pays.");
+      steps.push("Week 2: Low satisfaction and low growth together isn't a rough patch — it's a slow decline. Start mapping what you'd do differently if money weren't a factor, then find the version of that which pays.");
     } else {
-      steps.push("Your signals are mixed, which usually means the problem is specific, not existential. Keep a 2-week log of what drains you vs. what energizes you. The pattern will point you somewhere more useful than a gut feeling.");
+      steps.push("Week 2: Your signals are mixed, which usually means the problem is specific, not existential. Keep a 2-week log of what drains you vs. what energizes you. The pattern will point you somewhere more useful than a gut feeling.");
     }
   }
 
-  // Step 3: The money move
+  // Step 3: Weeks 3–4 — the money move
   if (runway >= 999) {
-    steps.push("Your safety net covers your expenses. That's rare and powerful. The risk for you isn't financial — it's staying too long because you can afford to be comfortable. Set a decision deadline and honor it.");
+    steps.push("Weeks 3–4: Your safety net covers your expenses. That's rare and powerful. The risk for you isn't financial — it's staying too long because you can afford to be comfortable. Set a decision deadline and honor it.");
   } else if (income > 0 && expenses > 0 && monthlySurplus > 0 && runway < 12) {
     const monthsPerMonth = (monthlySurplus / expenses).toFixed(1);
-    steps.push(`Every month you stay adds ${monthsPerMonth} months to your runway. That means staying 3 more months buys you ${(monthlySurplus * 3 / expenses).toFixed(0)} months of freedom. Decide what your target number is and work backward to your quit date.`);
+    steps.push(`Weeks 3–4: Every month you stay adds ${monthsPerMonth} months to your runway. That means staying 3 more months buys you ${(monthlySurplus * 3 / expenses).toFixed(0)} months of freedom. Decide what your target number is and work backward to your quit date.`);
   } else if (runway >= 12) {
-    steps.push("You have over a year of runway. Stop using money as the reason to stay — it's not the real blocker anymore. The real question is: what are you afraid happens if you actually leave?");
+    steps.push("Weeks 3–4: You have over a year of runway. Stop using money as the reason to stay — it's not the real blocker anymore. The real question is: what are you afraid happens if you actually leave?");
   } else if (runway < 3) {
-    steps.push("With less than 3 months of runway, do not quit without an offer or a concrete plan. That's not cowardice — it's strategy. Desperation is the worst negotiating position.");
+    steps.push("Weeks 3–4: With less than 3 months of runway, do not quit without an offer or a concrete plan. That's not cowardice — it's strategy. Desperation is the worst negotiating position.");
   } else {
-    steps.push("Your financial position is workable but not comfortable. Focus on getting to 6 months of runway — that's the threshold where most people stop making fear-based decisions.");
+    steps.push("Weeks 3–4: Your financial position is workable but not comfortable. Focus on getting to 6 months of runway — that's the threshold where most people stop making fear-based decisions.");
   }
 
   return steps;
@@ -458,6 +458,7 @@ export default function Home() {
   const [familySupport, setFamilySupport] = React.useState<number | "">("");
   const [unemploymentBenefits, setUnemploymentBenefits] = React.useState<number | "">("");
   const [netWorth, setNetWorth] = React.useState<number | "">("");
+  const [hasHealthCoverage, setHasHealthCoverage] = React.useState(true);
   const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
@@ -467,7 +468,8 @@ export default function Home() {
   const parsedIncome = typeof income === "number" ? income : parseFloat(income || "0");
   const parsedPartnerIncome = typeof partnerIncome === "number" ? partnerIncome : parseFloat(partnerIncome || "0");
   const parsedFamilySupport = typeof familySupport === "number" ? familySupport : parseFloat(familySupport || "0");
-  const parsedUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
+  const parsedWeeklyUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
+  const parsedUnemployment = parsedWeeklyUnemployment * 4.33; // weekly → monthly
   const parsedNetWorth = typeof netWorth === "number" ? netWorth : parseFloat(netWorth || "0");
 
   const UNEMPLOYMENT_MONTHS = 6;
@@ -492,6 +494,24 @@ export default function Home() {
     const cashAfterPhase1 = totalCash - phase1Expenses * UNEMPLOYMENT_MONTHS;
     if (phase2Expenses <= 0) return 999; // ongoing safety net covers post-unemployment
     return UNEMPLOYMENT_MONTHS + cashAfterPhase1 / phase2Expenses;
+  })();
+
+  // Health insurance adjustment: ~$500/mo if no employer coverage
+  const HEALTH_INSURANCE_COST = 500;
+  const adjustedExpenses = !hasHealthCoverage ? parsedExpenses + HEALTH_INSURANCE_COST : parsedExpenses;
+  const adjustedRunway = (() => {
+    if (hasHealthCoverage || parsedExpenses <= 0) return null;
+    const adjPhase1 = Math.max(0, adjustedExpenses - monthlySafetyNet);
+    const adjPhase2 = Math.max(0, adjustedExpenses - ongoingSafetyNet);
+    if (adjPhase1 <= 0) {
+      if (adjPhase2 <= 0) return 999;
+      return UNEMPLOYMENT_MONTHS + totalCash / adjPhase2;
+    }
+    const p1 = totalCash / adjPhase1;
+    if (p1 <= UNEMPLOYMENT_MONTHS) return p1;
+    const cashAfter = totalCash - adjPhase1 * UNEMPLOYMENT_MONTHS;
+    if (adjPhase2 <= 0) return 999;
+    return UNEMPLOYMENT_MONTHS + cashAfter / adjPhase2;
   })();
 
   const monthlySurplus = parsedIncome - parsedExpenses;
@@ -554,6 +574,34 @@ export default function Home() {
   );
   const nextSteps = getNextSteps(recommendedPath, archetype, runway, satisfaction, growth, parsedIncome, parsedExpenses, burnoutDriver, burnoutScore, age);
   const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
+  // Field-count confidence score
+  const optionalFieldLabels: { filled: boolean; label: string }[] = [
+    { filled: growth !== 5, label: "growth trajectory" },
+    { filled: burnoutDriver !== "Not sure", label: "burnout driver" },
+    { filled: age !== "", label: "age" },
+    { filled: parsedSeverance > 0 || severance !== "", label: "severance" },
+    { filled: parsedNetWorth > 0 || netWorth !== "", label: "net worth" },
+    { filled: parsedPartnerIncome > 0 || partnerIncome !== "", label: "partner income" },
+    { filled: parsedFamilySupport > 0 || familySupport !== "", label: "family support" },
+    { filled: parsedUnemployment > 0 || unemploymentBenefits !== "", label: "unemployment" },
+    { filled: !hasHealthCoverage || hasHealthCoverage, label: "health coverage" }, // always counted since it has a default
+  ];
+  // Health coverage toggle always has a value (default true), so replace with a smarter check:
+  // We count it as "filled" if the user has explicitly toggled it off (meaning they engaged with it)
+  optionalFieldLabels[optionalFieldLabels.length - 1] = { filled: !hasHealthCoverage, label: "health coverage" };
+
+  const filledCount = optionalFieldLabels.filter((f) => f.filled).length;
+  const totalOptional = optionalFieldLabels.length;
+  const fieldConfidence: "High" | "Medium" | "Low" =
+    filledCount >= 7 ? "High" : filledCount >= 4 ? "Medium" : "Low";
+  const missingFieldLabels = optionalFieldLabels.filter((f) => !f.filled).map((f) => f.label);
+  const confidenceExplanation = `Based on ${filledCount} of ${totalOptional} optional fields.${
+    missingFieldLabels.length > 0
+      ? ` Adding ${missingFieldLabels.slice(0, 2).join(" and ")} would most improve accuracy.`
+      : ""
+  }`;
+
+  // Keep old decision confidence for internal use
   const decisionConfidence = getDecisionConfidence(
     archetype,
     financialRisk,
@@ -569,13 +617,38 @@ export default function Home() {
   if (careerTimingPerspective) whyParts.push(careerTimingPerspective);
   const whyParagraph = whyParts.join(" ");
 
-  // Readiness tier: one clear label instead of separate risk badges
+  // Readiness tier
   type ReadinessTier = "Build More Runway" | "Prepare to Leave" | "Clear to Go";
+  const hasSafetyNet = parsedPartnerIncome > 0 || parsedFamilySupport > 0 || parsedUnemployment > 0;
   const readinessTier: ReadinessTier = (() => {
-    if (runway >= 12 || (runway >= 999)) return "Clear to Go";
-    if (runway >= 6 && (burnoutLevel === "Moderate" || burnoutLevel === "High") && savingsGap <= 20000) return "Prepare to Leave";
+    if (runway >= 12 || (runway >= 9 && hasSafetyNet)) return "Clear to Go";
+    if (runway >= 6 && burnout >= 7) return "Prepare to Leave";
+    if (runway >= 6) return "Prepare to Leave";
     return "Build More Runway";
   })();
+  const tierExplanation: string = (() => {
+    switch (readinessTier) {
+      case "Build More Runway":
+        return "Your financial position isn't strong enough yet for a safe exit. Focus on closing the gap.";
+      case "Prepare to Leave":
+        return "You have enough runway to start planning an exit. Use the next 60–90 days strategically.";
+      case "Clear to Go":
+        return "Your finances can support a transition. The question is timing and what comes next.";
+    }
+  })();
+
+  // Risk flags + strengths
+  const strengths: string[] = [];
+  const riskFlags: string[] = [];
+  if (runway > 9) strengths.push(`You have ${runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months`} of runway — more than most people who make this transition.`);
+  if (parsedPartnerIncome > 0) strengths.push("Partner income provides a financial safety net during your transition.");
+  if (monthlySurplus > 1000) strengths.push("Your savings rate is strong — every month you stay adds meaningfully to your runway.");
+  if (parsedSeverance > 0) strengths.push(`Expected severance of $${Math.round(parsedSeverance).toLocaleString()} extends your effective runway.`);
+  if (runway < 4 && runway > 0) riskFlags.push("Less than 4 months of runway creates significant pressure to accept the first opportunity available.");
+  if (burnout >= 8 && runway < 6 && runway > 0) riskFlags.push("High burnout combined with a short runway is the highest-risk combination. Decisions made under this pressure are often regretted.");
+  if (parsedPartnerIncome === 0 && parsedFamilySupport === 0) riskFlags.push("No partner income or family support — your runway is entirely self-funded.");
+  if (!hasHealthCoverage) riskFlags.push("You'll need marketplace health coverage, which typically costs $400–600/month and isn't factored into most people's initial estimates.");
+  if (parsedIncome > 0 && parsedExpenses > 0 && parsedIncome <= parsedExpenses) riskFlags.push("You're currently spending more than you earn — your runway is actively shrinking.");
 
   const readinessTierColor =
     readinessTier === "Clear to Go" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
@@ -689,7 +762,7 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
-          <p className="mt-1.5 text-sm text-slate-400">See how ready you really are.</p>
+          <p className="mt-1.5 text-sm text-slate-400">See how long you can last — and what to do next.</p>
         </header>
 
         {/* ── Card 1: How you're feeling ── */}
@@ -727,7 +800,7 @@ export default function Home() {
         <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-200">Savings you could live on</label>
+              <label className="block text-sm font-medium text-slate-200">Liquid savings you could live on</label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                 <input type="number" min={0} value={savings}
@@ -753,7 +826,7 @@ export default function Home() {
                 onChange={(e) => setIncome(e.target.value === "" ? "" : Number(e.target.value))}
                 className={inputClass} placeholder="e.g. 6,200" />
             </div>
-            <p className="text-xs text-slate-400">After taxes. Enables scenario modeling.</p>
+            <p className="text-xs text-slate-400">After taxes. Used for scenario modeling.</p>
           </div>
         </section>
 
@@ -795,7 +868,7 @@ export default function Home() {
                 <select value={burnoutDriver}
                   onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
                   className={inputClassNoDollar}>
-                  <option value="Not sure">Not sure</option>
+                  <option value="Not sure">Select what applies most</option>
                   <option value="Workload / hours">Workload / hours</option>
                   <option value="Lack of meaning">Lack of meaning</option>
                   <option value="Toxic culture">Toxic culture</option>
@@ -822,7 +895,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Total net worth <span className="text-xs font-normal text-slate-400">Context only.</span></label>
+                <label className="block text-sm font-medium text-slate-200">Total net worth</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                   <input type="number" min={0} value={netWorth}
@@ -831,6 +904,27 @@ export default function Home() {
                 </div>
                 <p className="text-xs text-slate-400">Investments, retirement accounts, equity, and other assets beyond cash savings.</p>
               </div>
+            </div>
+
+            {/* Health insurance toggle */}
+            <div className="flex items-center justify-between rounded-xl border border-slate-600 bg-slate-700/30 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-slate-200">Will you have health coverage after leaving?</p>
+                <p className="text-xs text-slate-400">Through partner, spouse, or other arrangement</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHasHealthCoverage(!hasHealthCoverage)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  hasHealthCoverage ? "bg-emerald-600" : "bg-slate-600"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                    hasHealthCoverage ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
 
             <details className="group/net rounded-xl border border-slate-600 bg-slate-700/30 px-4 py-3">
@@ -858,34 +952,42 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-slate-300">Unemployment</label>
+                  <label className="block text-xs font-medium text-slate-300">Unemployment (weekly)</label>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                     <input type="number" min={0} value={unemploymentBenefits}
                       onChange={(e) => setUnemploymentBenefits(e.target.value === "" ? "" : Number(e.target.value))}
-                      className={inputClass} placeholder="0" />
+                      className={inputClass} placeholder="e.g. 450" />
                   </div>
-                  <p className="text-[10px] text-slate-500">First 6 months only</p>
+                  <p className="text-[10px] text-slate-500">Weekly benefit · first 6 months only</p>
                 </div>
               </div>
             </details>
           </div>
         </details>
 
-        {/* ── Act 3: Results (merged runway + verdict + everything) ── */}
+        {/* ── Results ── */}
         {hasFinancialInputs && (
           <section className="space-y-4">
 
-            {/* Hero card: runway + verdict + core tension */}
+            {/* Visual break between inputs and results */}
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700" /></div>
+              <div className="relative flex justify-center">
+                <span className="bg-slate-900 px-4 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Career Runway Assessment</span>
+              </div>
+            </div>
+            <p className="text-center text-xs text-slate-500">Based on what you entered, here&apos;s what your situation looks like.</p>
+
+            {/* ── 1. YOUR NUMBERS — runway, savings target, safe quit date ── */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-              {/* Runway number */}
               <div className="text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway</p>
                 <p className={`mt-2 text-6xl font-bold tabular-nums sm:text-7xl ${runwayColorClass}`}>
-                  {runway >= 999 ? "Covered" : runway ? runway.toFixed(1) : "0"}
+                  {runway >= 999 ? "Covered" : runway === 0 ? "0" : runway.toFixed(1)}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
-                  {runway >= 999 ? "Your safety net covers your monthly expenses" : "months of financial runway"}
+                  {runway >= 999 ? "Your safety net covers your monthly expenses" : runway === 0 ? "No runway — expenses entered but no savings" : "months of financial runway"}
                 </p>
                 {runway < 999 && runway > 0 && (
                   <p className="mt-1 text-xs text-slate-500">
@@ -896,6 +998,14 @@ export default function Home() {
                   </p>
                 )}
               </div>
+
+              {/* Health insurance impact */}
+              {adjustedRunway !== null && adjustedRunway < 999 && (
+                <p className="mt-3 text-center text-xs text-amber-400">
+                  Without employer health coverage, your estimated monthly costs increase by ~$500, reducing your runway to{" "}
+                  <span className="font-semibold">{adjustedRunway.toFixed(1)} months</span>.
+                </p>
+              )}
 
               {/* Savings target + safe quit date */}
               {parsedExpenses > 0 && (
@@ -918,21 +1028,27 @@ export default function Home() {
                   )}
                   {monthsToTarget === null && savingsGap > 0 && (
                     <p className="text-xs text-rose-400">
-                      You&apos;re spending more than you earn — the gap grows each month without income changes.
+                      You&apos;re spending more than you earn — your runway is depleting.
                     </p>
                   )}
                 </div>
               )}
 
-              {/* Divider */}
-              <div className="my-6 border-t border-slate-700/50" />
+              {/* Net worth context */}
+              {parsedNetWorth > 0 && (
+                <p className="mt-3 text-center text-xs leading-relaxed text-slate-400">
+                  Beyond your liquid runway, you have ~${Math.round(parsedNetWorth).toLocaleString()} in long-term savings.
+                  {parsedNetWorth > parsedExpenses * 24
+                    ? " That's a meaningful backstop — your worst-case scenario has a floor, even if tapping those funds should be a last resort."
+                    : " It's not enough to change the math, but it's worth remembering you're not starting from zero."}
+                </p>
+              )}
+            </div>
 
-              {/* Readiness tier + headline */}
+            {/* ── 2. YOUR READINESS — tier badge + explanation ── */}
+            <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
-              </div>
-              <h2 className="mt-3 text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {archetype !== "None" && (
                   <span className="rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-xs font-medium text-slate-300">{archetype}</span>
                 )}
@@ -945,66 +1061,88 @@ export default function Home() {
                   <span className="rounded-full border border-blue-700/50 bg-blue-900/30 px-3 py-1 text-xs font-semibold text-blue-300">{getCareerPhaseLabel(age)}</span>
                 )}
               </div>
+              <h2 className="mt-3 text-xl font-semibold text-white sm:text-2xl">{headline}</h2>
+              <p className="mt-2 text-sm text-slate-400">{tierExplanation}</p>
 
-              {/* Core tension: first sentence bold */}
-              <p className="mt-5 text-sm leading-relaxed">
+              {/* Core tension */}
+              <p className="mt-4 text-sm leading-relaxed">
                 <span className="font-medium text-white">{coreTensionParts.lead}</span>
                 {coreTensionParts.rest && <span className="text-slate-300"> {coreTensionParts.rest}</span>}
               </p>
-
-              {/* Net worth context — not part of runway, but reframes risk */}
-              {parsedNetWorth > 0 && (
-                <p className="mt-3 text-xs leading-relaxed text-slate-400">
-                  Beyond your liquid runway, you have ~${Math.round(parsedNetWorth).toLocaleString()} in long-term savings.
-                  {parsedNetWorth > parsedExpenses * 24
-                    ? " That's a meaningful backstop — your worst-case scenario has a floor, even if tapping those funds should be a last resort."
-                    : " It's not enough to change the math, but it's worth remembering you're not starting from zero."}
-                </p>
-              )}
-
-              {/* Inline reality check */}
-              <p className="mt-4 text-xs italic leading-relaxed text-slate-500">
-                This tool surfaces patterns but cannot see your full life. Use it as one input alongside people you trust.
-              </p>
             </div>
 
-            {/* Scenarios */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium text-slate-500">If you quit today</p>
-                <p className={`mt-1 text-2xl font-bold tabular-nums ${runway >= 999 ? "text-emerald-400" : runway > 18 ? "text-emerald-400" : runway >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                  {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
-                </p>
-                <p className="text-xs text-slate-500">{runway >= 999 ? "covered" : "months"}</p>
-              </div>
-              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium text-slate-500">If you stay 3 months</p>
-                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                  {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
-                </p>
-                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay3 < 999 && (
-                  <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay3 - runway).toFixed(1)}</p>
+            {/* ── 3. WHAT'S WORKING / WHAT TO WATCH — strengths + risk flags ── */}
+            {(strengths.length > 0 || riskFlags.length > 0) && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {strengths.length > 0 && (
+                  <div className="rounded-xl border border-emerald-800/40 bg-emerald-900/10 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">What&apos;s working</p>
+                    <ul className="mt-2 space-y-2">
+                      {strengths.slice(0, 4).map((s) => (
+                        <li key={s} className="flex gap-2 text-xs leading-relaxed text-slate-300">
+                          <span className="mt-0.5 text-emerald-400">+</span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-                <p className="text-xs text-slate-500">{runwayStay3 >= 999 ? "covered" : "months"}</p>
-              </div>
-              <div className="rounded-xl bg-slate-800 px-4 py-3 text-center">
-                <p className="text-[11px] font-medium text-slate-500">If you stay 6 months</p>
-                <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 >= 999 ? "text-emerald-400" : runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
-                  {runwayStay6 >= 999 ? "✓" : runwayStay6 ? runwayStay6.toFixed(1) : "—"}
-                </p>
-                {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay6 < 999 && (
-                  <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay6 - runway).toFixed(1)}</p>
+                {riskFlags.length > 0 && (
+                  <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-rose-400">What to watch</p>
+                    <ul className="mt-2 space-y-2">
+                      {riskFlags.slice(0, 4).map((r) => (
+                        <li key={r} className="flex gap-2 text-xs leading-relaxed text-slate-300">
+                          <span className="mt-0.5 text-rose-400">!</span>
+                          <span>{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-                <p className="text-xs text-slate-500">{runwayStay6 >= 999 ? "covered" : "months"}</p>
               </div>
-            </div>
-            <p className="text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
+            )}
 
-            {/* What to do next — open by default */}
+            {/* ── 4. IF YOU STAY — scenario comparison ── */}
+            <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">If you stay</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
+                  <p className="text-[11px] font-medium text-slate-500">Quit today</p>
+                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runway >= 999 ? "text-emerald-400" : runway > 18 ? "text-emerald-400" : runway >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                    {runway >= 999 ? "✓" : runway ? runway.toFixed(1) : "—"}
+                  </p>
+                  <p className="text-xs text-slate-500">{runway >= 999 ? "covered" : "months"}</p>
+                </div>
+                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
+                  <p className="text-[11px] font-medium text-slate-500">Stay 3 months</p>
+                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay3 >= 999 ? "text-emerald-400" : runwayStay3 > 18 ? "text-emerald-400" : runwayStay3 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                    {runwayStay3 >= 999 ? "✓" : runwayStay3 ? runwayStay3.toFixed(1) : "—"}
+                  </p>
+                  {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay3 < 999 && (
+                    <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay3 - runway).toFixed(1)}</p>
+                  )}
+                  <p className="text-xs text-slate-500">{runwayStay3 >= 999 ? "covered" : "months"}</p>
+                </div>
+                <div className="rounded-xl bg-slate-700/30 px-4 py-3 text-center">
+                  <p className="text-[11px] font-medium text-slate-500">Stay 6 months</p>
+                  <p className={`mt-1 text-2xl font-bold tabular-nums ${runwayStay6 >= 999 ? "text-emerald-400" : runwayStay6 > 18 ? "text-emerald-400" : runwayStay6 >= 6 ? "text-amber-400" : "text-rose-400"}`}>
+                    {runwayStay6 >= 999 ? "✓" : runwayStay6 ? runwayStay6.toFixed(1) : "—"}
+                  </p>
+                  {parsedIncome > 0 && parsedExpenses > 0 && monthlySurplus > 0 && runway < 999 && runwayStay6 < 999 && (
+                    <p className="text-[10px] font-medium text-emerald-400">+{(runwayStay6 - runway).toFixed(1)}</p>
+                  )}
+                  <p className="text-xs text-slate-500">{runwayStay6 >= 999 ? "covered" : "months"}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-center text-xs font-medium text-slate-300">{scenarioInsight}</p>
+            </div>
+
+            {/* ── 5. YOUR NEXT 30 DAYS — action items ── */}
             <div className="rounded-xl bg-slate-800">
               <button type="button" onClick={() => toggleSection("steps")}
                 className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                What to do next
+                Your next 30 days
                 <svg className={`h-4 w-4 text-slate-400 transition ${openSections["steps"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
               {openSections["steps"] && (
@@ -1015,36 +1153,36 @@ export default function Home() {
                       <span>{step}</span>
                     </div>
                   ))}
-                  <div className="mt-2 flex items-center justify-between border-t border-slate-700/50 pt-3">
-                    <div className="text-[11px] text-slate-500">
-                      <p>Confidence: {decisionConfidence.level}</p>
-                      {(() => {
-                        const missing: string[] = [];
-                        if (!parsedIncome) missing.push("income");
-                        if (!parsedSeverance && severance === "") missing.push("severance");
-                        if (age === "") missing.push("age");
-                        if (burnoutDriver === "Not sure") missing.push("burnout driver");
-                        if (!parsedPartnerIncome && !parsedFamilySupport && !parsedUnemployment) missing.push("safety net");
-                        if (missing.length > 0) return (
-                          <p className="mt-0.5">Adding {missing.join(", ")} would sharpen this.</p>
-                        );
-                        return null;
-                      })()}
-                    </div>
-                    <button type="button" onClick={handleShareProfile}
-                      className="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
-                      {copied ? "Copied!" : "Copy my summary"}
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
 
-            {/* How we got here */}
+            {/* ── 6. ASSESSMENT CONFIDENCE ── */}
+            <div className="rounded-xl bg-slate-800 px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Assessment confidence:{" "}
+                    <span className={
+                      fieldConfidence === "High" ? "text-emerald-400" :
+                      fieldConfidence === "Medium" ? "text-amber-400" :
+                      "text-rose-400"
+                    }>{fieldConfidence}</span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">{confidenceExplanation}</p>
+                </div>
+                <button type="button" onClick={handleShareProfile}
+                  className="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
+                  {copied ? "Copied!" : "Copy summary"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── 7. HOW THIS WAS CALCULATED — transparency ── */}
             <div className="rounded-xl bg-slate-800">
               <button type="button" onClick={() => toggleSection("analysis")}
                 className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                How we got here
+                How this was calculated
                 <svg className={`h-4 w-4 text-slate-400 transition ${openSections["analysis"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
               {openSections["analysis"] && (
