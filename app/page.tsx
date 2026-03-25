@@ -517,6 +517,190 @@ function getCoreTension(
   return "Your situation has real tension in it, and there's no clean answer. That's normal. The goal isn't to find the perfect move — it's to find one that's good enough and that you can commit to without looking back every week.";
 }
 
+function getMoneyRunsOutDate(runway: number): string | null {
+  if (!Number.isFinite(runway) || runway >= 999 || runway <= 0) return null;
+  const d = new Date();
+  const totalDays = runway * 30.44; // average days per month
+  d.setDate(d.getDate() + Math.round(totalDays));
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getFloorRunway(
+  totalCash: number,
+  expenses: number,
+  hasHealthCoverage: boolean,
+  unemploymentBenefits: number,
+  partnerIncome: number,
+  familySupport: number
+): { floorRunway: number; floorDate: string | null; adjustments: string[] } {
+  const EMERGENCY_BUFFER = 3000; // one-time transition costs
+  const HEALTH_INSURANCE_COST = 550; // monthly if not covered
+  const EXPENSE_BUMP = 0.15; // 15% higher expenses in stress scenario
+
+  const adjustments: string[] = [];
+  let adjustedCash = totalCash - EMERGENCY_BUFFER;
+  adjustments.push("$3,000 in transition costs");
+  let adjustedExpenses = expenses * (1 + EXPENSE_BUMP);
+  adjustments.push("15% higher monthly expenses");
+  if (!hasHealthCoverage) {
+    adjustedExpenses += HEALTH_INSURANCE_COST;
+    adjustments.push(`health insurance at $${HEALTH_INSURANCE_COST}/mo`);
+  }
+
+  const ongoingSafetyNet = partnerIncome + familySupport;
+  const UNEMPLOYMENT_MONTHS = 6;
+  const phase1Expenses = Math.max(0, adjustedExpenses - unemploymentBenefits - ongoingSafetyNet);
+  const phase2Expenses = Math.max(0, adjustedExpenses - ongoingSafetyNet);
+
+  let floorRunway: number;
+  if (adjustedCash <= 0) {
+    floorRunway = 0;
+  } else if (phase1Expenses <= 0) {
+    floorRunway = phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + Math.max(0, adjustedCash) / phase2Expenses;
+  } else {
+    const p1 = adjustedCash / phase1Expenses;
+    if (p1 <= UNEMPLOYMENT_MONTHS) {
+      floorRunway = p1;
+    } else {
+      const rem = adjustedCash - phase1Expenses * UNEMPLOYMENT_MONTHS;
+      floorRunway = phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + rem / phase2Expenses;
+    }
+  }
+
+  const floorDate = getMoneyRunsOutDate(floorRunway);
+  return { floorRunway, floorDate, adjustments };
+}
+
+function getFullRecommendation(
+  path: RecommendedPath,
+  runway: number,
+  savingsTarget: number,
+  savingsGap: number,
+  safeQuitDate: string | null,
+  monthlySurplus: number,
+  totalCash: number,
+  readinessTier: string,
+  runwayStay3: number,
+  burnoutScore: number,
+  moneyRunsOutDate: string | null
+): string {
+  const runwayStr = runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months of runway`;
+  const targetStr = `$${Math.round(savingsTarget).toLocaleString()}`;
+  const gapStr = `$${Math.round(savingsGap).toLocaleString()}`;
+  const cashStr = `$${Math.round(totalCash).toLocaleString()}`;
+  const dateStr = moneyRunsOutDate ? ` Your savings would last until ${moneyRunsOutDate}.` : "";
+
+  if (path === "Consider taking a break or quitting") {
+    if (runway >= 18) {
+      return `You have ${runwayStr} — that's not just a cushion, it's optionality.${dateStr} The financial question is answered. The remaining question is strategic: what do you want the next chapter to look like?`;
+    }
+    if (runway >= 12) {
+      return `You have ${runwayStr}, which clears the 12-month safety threshold.${dateStr} You can leave on your terms. Use the first month to decompress, not to panic-apply.`;
+    }
+    return `You have ${runwayStr}.${dateStr} That's tight for a clean exit, but your burnout score of ${burnoutScore.toFixed(1)}/10 says staying is costly too. If you leave, move fast on the checklist below.`;
+  }
+
+  if (path === "Build more runway before quitting") {
+    if (safeQuitDate && monthlySurplus > 0) {
+      return `You have ${runwayStr}.${dateStr} Not enough for a safe exit. You need ${targetStr} to hit 12 months — that's a ${gapStr} gap. At $${Math.round(monthlySurplus).toLocaleString()}/month in savings, you close it by ${safeQuitDate}. That's your target date.`;
+    }
+    if (monthlySurplus <= 0) {
+      return `You have ${runwayStr}, but you're spending more than you earn — your runway is shrinking, not growing.${dateStr} Before you can plan an exit, you need to find at least $500\u2013$1,000/month in savings through expense cuts or income.`;
+    }
+    return `You have ${runwayStr}.${dateStr} You need ${targetStr} to hit 12 months. Focus on closing the ${gapStr} gap before making any moves.`;
+  }
+
+  if (path === "Search while employed") {
+    if (runway >= 9 && runwayStay3 >= 12) {
+      return `You have ${runwayStr} — close to safe, but not there yet.${dateStr} Three more months of saving gets you to ${runwayStay3.toFixed(1)} months. Search now, but don't quit until you hit ${targetStr} or land an offer.`;
+    }
+    if (runway >= 6) {
+      return `You have ${runwayStr}.${dateStr} That's enough to be strategic — not enough to be casual. Keep your income while you search, and keep saving toward your ${targetStr} target.`;
+    }
+    return `You have ${runwayStr}.${dateStr} Start your search now, but don't resign without an offer. Every month you stay adds to your safety margin.`;
+  }
+
+  // Stay and improve
+  return `You have ${runwayStr}.${dateStr} Your burnout is manageable and your situation doesn't call for an immediate exit. Focus on improving your current role while you build toward ${targetStr} in savings. If nothing changes in 90 days, reassess.`;
+}
+
+function getChecklist(
+  path: RecommendedPath,
+  runway: number,
+  monthlySurplus: number,
+  expenses: number,
+  totalCash: number,
+  savingsTarget: number,
+  safeQuitDate: string | null,
+  parsedSeverance: number,
+  hasHealthCoverage: boolean,
+  parsedUnemployment: number,
+  parsedPartnerIncome: number,
+  burnoutDriver: BurnoutDriver
+): string[] {
+  const items: string[] = [];
+  const surplus = Math.max(0, monthlySurplus);
+  const autoTransfer = Math.round(surplus * 0.7);
+  const gap = Math.max(0, savingsTarget - totalCash);
+
+  if (path === "Consider taking a break or quitting") {
+    items.push(`Move $${Math.round(totalCash).toLocaleString()} into a dedicated "runway account." Separate it from investments and daily spending.`);
+    if (!hasHealthCoverage) {
+      items.push("Research health coverage: COBRA (~$600/mo) vs. marketplace ($400–$550/mo). Budget for this starting day one.");
+    }
+    if (parsedUnemployment > 0) {
+      items.push(`File for unemployment benefits immediately after your last day. That's ~$${Math.round(parsedUnemployment).toLocaleString()}/month for up to 6 months.`);
+    } else {
+      items.push("Check your state's unemployment eligibility. Most professionals qualify for $1,500–$2,500/month for 6 months.");
+    }
+    items.push("Set a \u201Cdecision check-in\u201D date 90 days out. Put it in your calendar now. Revisit this plan then.");
+    if (parsedPartnerIncome > 0) {
+      items.push("Have the money conversation with your partner: share this plan, your runway number, and your timeline.");
+    } else {
+      items.push("Tell one person you trust about your plan and your timeline. Not for advice — for accountability.");
+    }
+  } else if (path === "Build more runway before quitting") {
+    if (surplus > 0) {
+      items.push(`Set up auto-transfer: $${autoTransfer.toLocaleString()}/month to a separate savings account. ${safeQuitDate ? `This gets you to your target by ${safeQuitDate}.` : "Every month counts."}`);
+    }
+    items.push(`Your target is $${Math.round(savingsTarget).toLocaleString()} (12 months of expenses). You're $${Math.round(gap).toLocaleString()} away.`);
+    items.push("Audit subscriptions and recurring charges this week. Most people find $200–$400/month they forgot about.");
+    if (!hasHealthCoverage) {
+      items.push("Start researching health coverage options now. Budget $400–$600/month in your post-exit expenses.");
+    }
+    if (burnoutDriver === "Toxic culture" || burnoutDriver === "Workload / hours") {
+      items.push("While you build runway, protect your energy: set one firm boundary this week and hold it.");
+    }
+    items.push(`Set a calendar reminder to revisit this plan in 30 days. ${safeQuitDate ? `Your safe quit date is ${safeQuitDate} — track against it.` : "Track your savings progress."}`);
+  } else if (path === "Search while employed") {
+    items.push("Update your resume and LinkedIn this week. Not tomorrow — this week.");
+    if (surplus > 0) {
+      items.push(`Keep saving: $${autoTransfer.toLocaleString()}/month auto-transfer while you search. ${safeQuitDate ? `You hit 12-month safety by ${safeQuitDate}.` : ""}`);
+    }
+    items.push("Reach out to 3 people in roles or companies you're curious about. Ask what they'd change about their job.");
+    if (!hasHealthCoverage) {
+      items.push("Don't accept an offer without comparing health coverage. Budget $400–$600/month if you'll have a gap.");
+    }
+    items.push("Set a search deadline: if nothing promising in 90 days, reassess whether the issue is the market or the target.");
+    if (parsedSeverance > 0) {
+      items.push(`Your severance of $${Math.round(parsedSeverance).toLocaleString()} gives you extra cushion. Factor it in, but don't count on it until it's confirmed in writing.`);
+    }
+  } else {
+    // Stay and improve
+    items.push("Write down the 3 specific things that would need to change for you to feel good about staying 12 more months.");
+    items.push("Share those 3 things with your manager within 2 weeks. If you can't, that tells you something.");
+    if (surplus > 0) {
+      items.push(`Keep building runway: $${autoTransfer.toLocaleString()}/month auto-transfer. Options feel different when you have 12 months of savings.`);
+    }
+    items.push("Set a 90-day check-in: if nothing has improved by then, switch to an active search.");
+    if (burnoutDriver === "Compensation mismatch") {
+      items.push("Get your market number this week: levels.fyi, Glassdoor, or ask peers directly. Data changes negotiations.");
+    }
+  }
+
+  return items.slice(0, 7); // cap at 7 items
+}
+
 export default function Home() {
   const [savings, setSavings] = React.useState<number | "">("");
   const [expenses, setExpenses] = React.useState<number | "">("");
@@ -659,11 +843,8 @@ export default function Home() {
     { filled: parsedPartnerIncome > 0 || partnerIncome !== "", label: "partner income" },
     { filled: parsedFamilySupport > 0 || familySupport !== "", label: "family support" },
     { filled: parsedUnemployment > 0 || unemploymentBenefits !== "", label: "unemployment" },
-    { filled: !hasHealthCoverage || hasHealthCoverage, label: "health coverage" }, // always counted since it has a default
+    { filled: !hasHealthCoverage, label: "health coverage" },
   ];
-  // Health coverage toggle always has a value (default true), so replace with a smarter check:
-  // We count it as "filled" if the user has explicitly toggled it off (meaning they engaged with it)
-  optionalFieldLabels[optionalFieldLabels.length - 1] = { filled: !hasHealthCoverage, label: "health coverage" };
 
   const filledCount = optionalFieldLabels.filter((f) => f.filled).length;
   const totalOptional = optionalFieldLabels.length;
@@ -769,6 +950,45 @@ export default function Home() {
 
   const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
 
+  const moneyRunsOutDate = getMoneyRunsOutDate(runway);
+  const { floorRunway, floorDate, adjustments: floorAdjustments } = getFloorRunway(
+    totalCash,
+    parsedExpenses,
+    hasHealthCoverage,
+    parsedUnemployment,
+    parsedPartnerIncome,
+    parsedFamilySupport
+  );
+
+  const fullRecommendation = getFullRecommendation(
+    recommendedPath,
+    runway,
+    savingsTarget,
+    savingsGap,
+    safeQuitDate,
+    monthlySurplus,
+    totalCash,
+    readinessTier,
+    runwayStay3,
+    burnoutScore,
+    moneyRunsOutDate
+  );
+
+  const checklist = getChecklist(
+    recommendedPath,
+    runway,
+    monthlySurplus,
+    parsedExpenses,
+    totalCash,
+    savingsTarget,
+    safeQuitDate,
+    parsedSeverance,
+    hasHealthCoverage,
+    parsedUnemployment,
+    parsedPartnerIncome,
+    burnoutDriver
+  );
+
   const hasFinancialInputs = parsedExpenses > 0;
   const hasAnySavings = parsedSavings > 0 || parsedSeverance > 0;
   const showLiveRunway = hasAnySavings || hasFinancialInputs;
@@ -783,7 +1003,6 @@ export default function Home() {
         ? `${runway.toFixed(1)} months of runway`
         : "runway not yet calculated";
 
-    const totalCash = parsedSavings + parsedSeverance;
     const totalCashText = totalCash > 0
       ? `$${Math.round(totalCash).toLocaleString()} total cash (savings${parsedSeverance > 0 ? ` + $${Math.round(parsedSeverance).toLocaleString()} severance` : ""})`
       : null;
@@ -850,8 +1069,8 @@ export default function Home() {
     return { lead: coreTension.slice(0, idx + 1), rest: coreTension.slice(idx + 2) };
   })();
 
-  // Collapsible section state — "steps" open by default
-  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({ steps: true });
+  // Collapsible section state
+  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -901,7 +1120,7 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Exit Readiness Assessment</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Runway Planner</p>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-400">
             You already know something needs to change. This tool helps you see whether the money supports the move — and what to do next.
           </p>
@@ -952,7 +1171,7 @@ export default function Home() {
             <p className="text-xs text-slate-400">1 = completely stalled, 10 = accelerating</p>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-200">What&apos;s wearing you down most?</label>
+            <label className="block text-sm font-medium text-slate-200">What's wearing you down most?</label>
             <select value={burnoutDriver}
               onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
               className={inputClassNoDollar}>
@@ -1107,44 +1326,155 @@ export default function Home() {
         {hasFinancialInputs && (
           <section className="space-y-4">
 
-            {/* ── 1. EXECUTIVE SUMMARY — the answer ── */}
+            {/* ── PLAN HEADER WITH DATE + COPY ── */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway Plan</p>
+                <p className="text-[10px] text-slate-500">{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const runwayLine = runway >= 999 ? "Runway: Fully covered" : `Runway: ${runway.toFixed(1)} months${moneyRunsOutDate ? ` (through ${moneyRunsOutDate})` : ""}`;
+                  const planText = [
+                    `RUNWAY PLAN — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
+                    "",
+                    `Status: ${readinessTier}`,
+                    runwayLine,
+                    `12-month target: $${Math.round(savingsTarget).toLocaleString()}`,
+                    savingsGap > 0 ? `Gap to close: $${Math.round(savingsGap).toLocaleString()}` : "Target reached",
+                    safeQuitDate ? `Safe quit date: ${safeQuitDate}` : "",
+                    floorRunway < 999 && floorRunway > 0 ? `Worst-case floor: ${floorRunway.toFixed(1)} months${floorDate ? ` (through ${floorDate})` : ""}` : "",
+                    "",
+                    fullRecommendation,
+                    "",
+                    "— Generated by Runway (tryrunway.com)"
+                  ].filter(Boolean).join("\n");
+                  try {
+                    await navigator.clipboard.writeText(planText);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  } catch { /* clipboard may not be available */ }
+                }}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-[11px] font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+              >
+                {copied ? (
+                  <>
+                    <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    Copy plan
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* ── 1. THE BOTTOM LINE ── */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
               <div className="flex items-center gap-3">
                 <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
               </div>
-              <p className="mt-3 text-lg font-semibold text-white sm:text-xl">{recommendedPath}</p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-400">{headline}</p>
 
-              {/* Key numbers */}
-              <div className={`mt-5 grid gap-4 border-t border-slate-700 pt-5 ${safeQuitDate && monthlySurplus > 0 && runway < 12 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {/* Full-sentence recommendation */}
+              <p className="mt-4 text-sm leading-relaxed text-slate-200">
+                {fullRecommendation}
+              </p>
+
+              {/* Key numbers row */}
+              <div className="mt-5 grid grid-cols-3 gap-4 border-t border-slate-700 pt-5">
                 <div>
                   <p className={`text-2xl font-bold tabular-nums ${runwayColorClass}`}>
                     {runway >= 999 ? "Covered" : runway === 0 ? "0" : runway.toFixed(1)}
                   </p>
-                  <p className="text-xs text-slate-500">{runway >= 999 ? "expenses covered" : "months of runway"}</p>
+                  <p className="text-[11px] text-slate-500">
+                    {runway >= 999 ? "expenses covered" : "months of runway"}
+                    {moneyRunsOutDate && runway < 999 && <span className="text-slate-400"> · through {moneyRunsOutDate}</span>}
+                  </p>
                 </div>
-                {safeQuitDate && monthlySurplus > 0 && runway < 12 && (
-                  <div>
-                    <p className="text-2xl font-bold text-white">{safeQuitDate.split(" ")[0].slice(0, 3)}&nbsp;&apos;{safeQuitDate.split(" ")[1]?.slice(2)}</p>
-                    <p className="text-xs text-slate-500">12-month runway by</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-2xl font-bold tabular-nums text-white">
+                    {savingsTarget > 0 ? `$${Math.round(savingsTarget / 1000)}k` : "\u2014"}
+                  </p>
+                  <p className="text-[11px] text-slate-500">12-month target</p>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold tabular-nums ${savingsGap <= 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                    {savingsGap <= 0 ? "\u2713" : `$${Math.round(savingsGap / 1000)}k`}
+                  </p>
+                  <p className="text-[11px] text-slate-500">{savingsGap <= 0 ? "target reached" : "gap to close"}</p>
+                </div>
               </div>
-
-              {/* Biggest lever — one line */}
-              {needleMovers.length > 0 && (
-                <p className="mt-4 text-xs leading-relaxed text-slate-400">
-                  <span className="font-semibold text-slate-300">Biggest lever:</span>{" "}{needleMovers[0]}
-                </p>
-              )}
             </div>
 
-            {/* ── 2. EMAIL GATE ── */}
+            {/* ── 2. YOUR OPTIONS, COMPARED — always visible ── */}
+            {(() => {
+              const allSameRisk = options.every((o) => o.risk === options[0].risk);
+              return (
+                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your options, compared</p>
+                  <div className="mt-4 space-y-3">
+                    {options.map((opt) => (
+                      <div
+                        key={opt.key}
+                        className={`rounded-xl border p-4 ${opt.recommended ? "border-emerald-700/60 bg-emerald-950/20" : "border-slate-700 bg-slate-800/50"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-semibold ${opt.recommended ? "text-emerald-300" : "text-slate-200"}`}>{opt.label}</p>
+                            {opt.recommended && (
+                              <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-[10px] font-bold text-emerald-300">Recommended</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className={`text-lg font-bold tabular-nums ${opt.risk === "Low" ? "text-emerald-400" : opt.risk === "Moderate" ? "text-amber-400" : "text-rose-400"}`}>
+                                {opt.runway >= 999 ? "Covered" : `${opt.runway.toFixed(1)} mo`}
+                              </p>
+                              {opt.key !== "now" && (
+                                <p className="text-[10px] text-slate-500">
+                                  ${Math.round(totalCash + Math.max(0, monthlySurplus) * (opt.key === "stay3" ? 3 : 6)).toLocaleString()} saved
+                                </p>
+                              )}
+                            </div>
+                            {!allSameRisk && (
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${opt.risk === "Low" ? "bg-emerald-900/40 text-emerald-400" : opt.risk === "Moderate" ? "bg-amber-900/40 text-amber-400" : "bg-rose-900/40 text-rose-400"}`}>
+                                {opt.risk}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{opt.tradeoff}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── 3. WHAT MOVES THE NEEDLE — always visible ── */}
+            {needleMovers.length > 0 && (
+              <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">What moves the needle</p>
+                <div className="mt-3 space-y-2.5">
+                  {needleMovers.map((insight, i) => (
+                    <div key={insight} className="flex gap-2.5 text-sm leading-relaxed">
+                      <span className={`mt-0.5 font-bold tabular-nums ${i === 0 ? "text-emerald-400" : "text-slate-500"}`}>{i + 1}.</span>
+                      <span className="text-slate-200">{insight}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── 4. EMAIL GATE — gates safe quit date, floor, checklist ── */}
             {!gateUnlocked ? (
               <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 sm:p-7">
-                <p className="text-sm font-semibold text-white">See your options side by side.</p>
+                <p className="text-sm font-semibold text-white">Unlock your full Runway Plan.</p>
                 <p className="mt-1.5 text-xs text-slate-400">
-                  Leave now vs. stay 3 or 6 months — with the tradeoffs, your action plan, and what changes the math.
+                  Your safe quit date, worst-case floor, personalized 30-day checklist, and risk analysis — based on your numbers.
                 </p>
                 <form onSubmit={handleGateSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
@@ -1159,133 +1489,148 @@ export default function Home() {
                     disabled={gateSubmitting}
                     className="whitespace-nowrap rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
                   >
-                    {gateSubmitting ? "Sending..." : "Unlock full assessment"}
+                    {gateSubmitting ? "Sending..." : "Unlock your plan"}
                   </button>
                 </form>
                 {gateError && <p className="mt-2 text-xs text-rose-400">{gateError}</p>}
-                <p className="mt-3 text-[11px] text-slate-500">No spam. Just your results.</p>
+                <p className="mt-3 text-[11px] text-slate-500">No spam. Just your plan.</p>
               </div>
             ) : (
               <>
-                {/* ── 3. YOUR OPTIONS — the comparison that justifies the product ── */}
-                {(() => {
-                  const allSameRisk = options.every((o) => o.risk === options[0].risk);
-                  return (
-                    <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your options</p>
-                      <div className="mt-4 space-y-3">
-                        {options.map((opt) => (
-                          <div
-                            key={opt.key}
-                            className={`rounded-xl border p-4 ${opt.recommended ? "border-emerald-700/60 bg-emerald-950/20" : "border-slate-700 bg-slate-800/50"}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <p className={`text-sm font-semibold ${opt.recommended ? "text-emerald-300" : "text-slate-200"}`}>{opt.label}</p>
-                                {opt.recommended && (
-                                  <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-[10px] font-bold text-emerald-300">Recommended</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <p className={`text-lg font-bold tabular-nums ${opt.risk === "Low" ? "text-emerald-400" : opt.risk === "Moderate" ? "text-amber-400" : "text-rose-400"}`}>
-                                  {opt.runway >= 999 ? "Covered" : `${opt.runway.toFixed(1)} mo`}
-                                </p>
-                                {!allSameRisk && (
-                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${opt.risk === "Low" ? "bg-emerald-900/40 text-emerald-400" : opt.risk === "Moderate" ? "bg-amber-900/40 text-amber-400" : "bg-rose-900/40 text-rose-400"}`}>
-                                    {opt.risk}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{opt.tradeoff}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* ── 4. YOUR MOVE — the plan ── */}
-                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your move</p>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400">This week</p>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.thisWeek}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400">This month</p>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.thisMonth}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400">Before you decide</p>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-200">{yourMove.beforeYouDecide}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── 4. WHAT CHANGES THE MATH — levers ranked by impact ── */}
-                {needleMovers.length > 1 && (
+                {/* ── 5. YOUR SAFE QUIT DATE ── */}
+                {parsedExpenses > 0 && (
                   <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">What changes the math</p>
-                    <div className="mt-3 space-y-2">
-                      {needleMovers.map((insight) => (
-                        <div key={insight} className="flex gap-2.5 text-sm leading-relaxed">
-                          <span className="mt-0.5 text-slate-500">→</span>
-                          <span className="text-slate-200">{insight}</span>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your safe quit date</p>
+                    {runway >= 12 ? (
+                      <div className="mt-3">
+                        <p className="text-2xl font-bold text-emerald-400">Now</p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                          You already have {runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months of runway`}, which exceeds the 12-month safety threshold. You could leave today with financial confidence.
+                        </p>
+                      </div>
+                    ) : safeQuitDate && monthlySurplus > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-2xl font-bold text-white">{safeQuitDate}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                          At your current savings rate of ${Math.round(monthlySurplus).toLocaleString()}/month, you hit 12 months of runway ({`$${Math.round(savingsTarget).toLocaleString()}`}) by this date. That{"\u2019"}s {monthsToTarget} month{monthsToTarget === 1 ? "" : "s"} from now.
+                        </p>
+                        {/* Progress bar */}
+                        <div className="mt-4">
+                          <div className="flex justify-between text-[10px] text-slate-500">
+                            <span>${Math.round(totalCash).toLocaleString()} saved</span>
+                            <span>${Math.round(savingsTarget).toLocaleString()} target</span>
+                          </div>
+                          <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-700">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-700"
+                              style={{ width: `${Math.min(100, (totalCash / savingsTarget) * 100)}%` }}
+                            />
+                          </div>
+                          <p className="mt-1 text-[10px] text-slate-500">{Math.round((totalCash / savingsTarget) * 100)}% of target</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── 5. THE DEEPER PICTURE — archetype + core tension ── */}
-                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-                  {archetype !== "None" && (
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{archetype}</p>
-                  )}
-                  <p className={`${archetype !== "None" ? "mt-2" : ""} text-sm leading-relaxed`}>
-                    <span className="font-medium text-white">{coreTensionParts.lead}</span>
-                    {coreTensionParts.rest && <span className="text-slate-400"> {coreTensionParts.rest}</span>}
-                  </p>
-                </div>
-
-                {/* ── 6. STRENGTHS + RISKS (collapsed) ── */}
-                {(strengths.length > 0 || riskFlags.length > 0) && (
-                  <div className="rounded-xl bg-slate-800">
-                    <button type="button" onClick={() => toggleSection("risks")}
-                      className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-200">
-                      What&apos;s working &amp; what to watch
-                      <svg className={`h-4 w-4 text-slate-400 transition ${openSections["risks"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    {openSections["risks"] && (
-                      <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
-                        {strengths.length > 0 && (
-                          <div>
-                            {strengths.slice(0, 3).map((s) => (
-                              <p key={s} className="mt-2 flex gap-2 text-xs leading-relaxed text-slate-300">
-                                <span className="text-emerald-400">+</span>
-                                <span>{s}</span>
-                              </p>
-                            ))}
-                          </div>
-                        )}
-                        {riskFlags.length > 0 && (
-                          <div>
-                            {riskFlags.slice(0, 3).map((r) => (
-                              <p key={r} className="mt-2 flex gap-2 text-xs leading-relaxed text-slate-300">
-                                <span className="text-rose-400">!</span>
-                                <span>{r}</span>
-                              </p>
-                            ))}
-                          </div>
-                        )}
+                      </div>
+                    ) : monthlySurplus <= 0 ? (
+                      <div className="mt-3">
+                        <p className="text-2xl font-bold text-rose-400">Not yet calculable</p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                          You{"\u2019"}re currently spending more than you earn. Until you create a monthly surplus, your runway is shrinking, not growing. Cut expenses or increase income to establish a safe quit date.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3">
+                        <p className="text-2xl font-bold text-emerald-400">You{"\u2019"}re there</p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                          Your savings already cover 12 months of expenses. The financial runway is in place.
+                        </p>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* ── 7. ASSUMPTIONS & LIMITS (collapsed) ── */}
+                {/* ── 6. YOUR FLOOR — stress test ── */}
+                {floorRunway > 0 && floorRunway < 999 && runway > 0 && runway < 999 && (runway - floorRunway) > 0.5 && (
+                  <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your floor</p>
+                    <div className="mt-3 flex items-baseline gap-3">
+                      <p className="text-2xl font-bold tabular-nums text-rose-400">{floorRunway.toFixed(1)}</p>
+                      <p className="text-sm text-slate-400">months in a tighter scenario</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                      If things don{"\u2019"}t go perfectly {"\u2014"} {floorAdjustments.join(", ")} {"\u2014"} your runway drops from{" "}
+                      <span className="text-white">{runway.toFixed(1)} months</span> to{" "}
+                      <span className="text-rose-300">{floorRunway.toFixed(1)} months</span>.
+                      {moneyRunsOutDate && floorDate && (
+                        <> Money runs out by {floorDate} instead of {moneyRunsOutDate}.</>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* ── 7. YOUR 30-DAY CHECKLIST ── */}
+                <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your 30-day checklist</p>
+                  <div className="mt-4 space-y-3">
+                    {checklist.map((item, i) => (
+                      <label key={i} className="flex gap-3 cursor-pointer group">
+                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border border-slate-600 bg-slate-700/50 text-[10px] text-slate-400 group-hover:border-slate-400 transition">
+                          {i + 1}
+                        </span>
+                        <span className="text-sm leading-relaxed text-slate-200">{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── 8. STRENGTHS & RISK FLAGS ── */}
+                {(strengths.length > 0 || riskFlags.length > 0) && (
+                  <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Strengths &amp; risk flags</p>
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                      {strengths.length > 0 && (
+                        <div className="space-y-2">
+                          {strengths.slice(0, 3).map((s) => (
+                            <p key={s} className="flex gap-2 text-xs leading-relaxed text-slate-300">
+                              <span className="text-emerald-400 font-bold">+</span>
+                              <span>{s}</span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      {riskFlags.length > 0 && (
+                        <div className="space-y-2">
+                          {riskFlags.slice(0, 3).map((r) => (
+                            <p key={r} className="flex gap-2 text-xs leading-relaxed text-slate-300">
+                              <span className="text-rose-400 font-bold">!</span>
+                              <span>{r}</span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 9. THE DEEPER PICTURE — collapsed ── */}
+                {archetype !== "None" && (
+                  <div className="rounded-xl bg-slate-800">
+                    <button type="button" onClick={() => toggleSection("deeper")}
+                      className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
+                      The deeper picture
+                      <svg className={`h-4 w-4 text-slate-400 transition ${openSections["deeper"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {openSections["deeper"] && (
+                      <div className="px-5 pb-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{archetype}</p>
+                        <p className="mt-2 text-sm leading-relaxed">
+                          <span className="font-medium text-white">{coreTensionParts.lead}</span>
+                          {coreTensionParts.rest && <span className="text-slate-400"> {coreTensionParts.rest}</span>}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── 10. ASSUMPTIONS & LIMITS — collapsed ── */}
                 <div className="rounded-xl bg-slate-800">
                   <button type="button" onClick={() => toggleSection("analysis")}
                     className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
