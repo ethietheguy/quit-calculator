@@ -26,6 +26,8 @@ type BurnoutDriver =
   | "Compensation mismatch"
   | "Not sure";
 
+type PressureState = "Low Pressure" | "Moderate Pressure" | "High Pressure";
+
 function getCareerTimingPerspective(age: number | ""): string | null {
   const a = typeof age === "number" ? age : parseFloat(String(age || "0"));
   if (!Number.isFinite(a) || a < 18) return null;
@@ -147,6 +149,58 @@ function getHeadline(path: RecommendedPath): string {
   }
 }
 
+function getPressureState(
+  runway: number,
+  burnoutScore: number,
+  monthlySurplus: number,
+  hasSafetyNet: boolean
+): PressureState {
+  // High Pressure: financial margin is dangerously low or actively shrinking
+  if (runway < 6 && runway > 0) return "High Pressure";
+  if (runway < 9 && burnoutScore >= 8) return "High Pressure";
+  if (monthlySurplus < 0 && runway < 12) return "High Pressure";
+
+  // Low Pressure: real room to be deliberate
+  if (runway >= 12 || (runway >= 9 && hasSafetyNet)) {
+    if (burnoutScore < 8) return "Low Pressure";
+    return "Moderate Pressure"; // high burnout compresses even strong financial positions
+  }
+
+  // Everything else
+  return "Moderate Pressure";
+}
+
+function getBestMove(
+  pressureState: PressureState,
+  path: RecommendedPath,
+  burnoutScore: number,
+  runway: number
+): string {
+  if (pressureState === "Low Pressure") {
+    if (path === "Consider taking a break or quitting") {
+      return burnoutScore >= 8 ? "Decompress, then decide" : "Explore and transition";
+    }
+    return "Search deliberately";
+  }
+  if (pressureState === "Moderate Pressure") {
+    if (path === "Search while employed") return "Search while you save";
+    if (path === "Build more runway before quitting") return "Set a quit date and build toward it";
+    return "Protect your options";
+  }
+  // High Pressure
+  if (runway < 3) return "Don\u2019t quit without an offer";
+  if (path === "Build more runway before quitting") return "Extend your runway first";
+  return "Stabilize, then move";
+}
+
+function formatRunwayHuman(runway: number): string {
+  if (runway >= 999) return "Covered";
+  if (runway <= 0) return "0";
+  const months = Math.floor(runway);
+  const weeks = Math.round((runway - months) * 4.33);
+  if (weeks === 0 || weeks >= 4) return `${Math.round(runway)} mo`;
+  return `${months} mo ${weeks} wk`;
+}
 
 function getBurnoutDriverInsight(burnoutDriver: BurnoutDriver): string | null {
   switch (burnoutDriver) {
@@ -374,7 +428,7 @@ function getWhatMovesTheNeedle(
   // Partner income
   if (partnerIncome === 0 && expenses > 0 && runway > 0 && runway < 18) {
     insights.push({
-      text: `With no partner income, your runway is entirely self-funded. Even $2,000/mo from a partner would stretch it significantly.`,
+      text: `Your runway is entirely self-funded. Adding any external income source \u2014 partner, family, or side work \u2014 would meaningfully extend it.`,
       impact: 3
     });
   }
@@ -582,46 +636,44 @@ function getFullRecommendation(
   readinessTier: string,
   runwayStay3: number,
   burnoutScore: number,
-  moneyRunsOutDate: string | null
+  moneyRunsOutDate: string | null,
+  pressureState: PressureState
 ): string {
-  const runwayStr = runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months of runway`;
   const targetStr = `$${Math.round(savingsTarget).toLocaleString()}`;
   const gapStr = `$${Math.round(savingsGap).toLocaleString()}`;
-  const cashStr = `$${Math.round(totalCash).toLocaleString()}`;
-  const dateStr = moneyRunsOutDate ? ` Your savings would last until ${moneyRunsOutDate}.` : "";
+  const dateStr = moneyRunsOutDate ? `Your savings would last until ${moneyRunsOutDate}. ` : "";
 
-  if (path === "Consider taking a break or quitting") {
+  if (pressureState === "Low Pressure") {
     if (runway >= 18) {
-      return `You have ${runwayStr} — that's not just a cushion, it's optionality.${dateStr} The financial question is answered. The remaining question is strategic: what do you want the next chapter to look like?`;
+      return `${dateStr}You have the margin to be fully deliberate about what comes next. This isn\u2019t a financial decision anymore \u2014 it\u2019s a strategic one.`;
     }
     if (runway >= 12) {
-      return `You have ${runwayStr}, which clears the 12-month safety threshold.${dateStr} You can leave on your terms. Use the first month to decompress, not to panic-apply.`;
+      return `${dateStr}You\u2019ve cleared the 12-month safety threshold. You can afford to move on your own timeline, not someone else\u2019s.`;
     }
-    return `You have ${runwayStr}.${dateStr} That's tight for a clean exit, but your burnout score of ${burnoutScore.toFixed(1)}/10 says staying is costly too. If you leave, move fast on the checklist below.`;
+    return `${dateStr}With a safety net backing you, you have more room than the raw number suggests. Use it wisely.`;
   }
 
-  if (path === "Build more runway before quitting") {
-    if (safeQuitDate && monthlySurplus > 0) {
-      return `You have ${runwayStr}.${dateStr} Not enough for a safe exit. You need ${targetStr} to hit 12 months — that's a ${gapStr} gap. At $${Math.round(monthlySurplus).toLocaleString()}/month in savings, you close it by ${safeQuitDate}. That's your target date.`;
+  if (pressureState === "High Pressure") {
+    if (monthlySurplus < 0) {
+      return `You\u2019re spending more than you earn \u2014 your runway is shrinking, not growing. ${dateStr}Before you can plan an exit, you need to stop the bleeding: cut expenses or increase income.`;
     }
-    if (monthlySurplus <= 0) {
-      return `You have ${runwayStr}, but you're spending more than you earn — your runway is shrinking, not growing.${dateStr} Before you can plan an exit, you need to find at least $500\u2013$1,000/month in savings through expense cuts or income.`;
+    if (runway < 3) {
+      return `${dateStr}With less than 3 months of margin, you don\u2019t have room for an unplanned exit. Your priority is creating breathing room \u2014 not making a career decision under this kind of pressure.`;
     }
-    return `You have ${runwayStr}.${dateStr} You need ${targetStr} to hit 12 months. Focus on closing the ${gapStr} gap before making any moves.`;
+    if (burnoutScore >= 8) {
+      return `${dateStr}Your burnout is severe and your financial margin is tight. That\u2019s the hardest combination. The instinct to flee is real, but a forced exit makes everything harder. Build toward your ${targetStr} target first.`;
+    }
+    return `${dateStr}You need more runway before any exit makes sense. Focus on closing the ${gapStr} gap to reach ${targetStr}.`;
   }
 
-  if (path === "Search while employed") {
-    if (runway >= 9 && runwayStay3 >= 12) {
-      return `You have ${runwayStr} — close to safe, but not there yet.${dateStr} Three more months of saving gets you to ${runwayStay3.toFixed(1)} months. Search now, but don't quit until you hit ${targetStr} or land an offer.`;
-    }
-    if (runway >= 6) {
-      return `You have ${runwayStr}.${dateStr} That's enough to be strategic — not enough to be casual. Keep your income while you search, and keep saving toward your ${targetStr} target.`;
-    }
-    return `You have ${runwayStr}.${dateStr} Start your search now, but don't resign without an offer. Every month you stay adds to your safety margin.`;
+  // Moderate Pressure
+  if (safeQuitDate && monthlySurplus > 0) {
+    return `${dateStr}You have a window, but not an open one. At $${Math.round(monthlySurplus).toLocaleString()}/month in savings, you close the ${gapStr} gap by ${safeQuitDate}. That\u2019s your target.`;
   }
-
-  // Stay and improve
-  return `You have ${runwayStr}.${dateStr} Your burnout is manageable and your situation doesn't call for an immediate exit. Focus on improving your current role while you build toward ${targetStr} in savings. If nothing changes in 90 days, reassess.`;
+  if (runway >= 9 && runwayStay3 >= 12) {
+    return `${dateStr}Three more months of saving gets you from ${runway.toFixed(1)} to ${runwayStay3.toFixed(1)} months \u2014 enough to cross the safety threshold. Search now, but don\u2019t resign until you\u2019re there.`;
+  }
+  return `${dateStr}You have enough margin to be strategic but not enough to be casual. Keep your income while you search, and keep saving toward ${targetStr}.`;
 }
 
 function getChecklist(
@@ -713,6 +765,7 @@ export default function Home() {
   const [unemploymentBenefits, setUnemploymentBenefits] = React.useState<number | "">("");
   const [netWorth, setNetWorth] = React.useState<number | "">("");
   const [hasHealthCoverage, setHasHealthCoverage] = React.useState(true);
+  const [debtPayments, setDebtPayments] = React.useState<number | "">("");
   const [burnout, setBurnout] = React.useState(5);
   const [satisfaction, setSatisfaction] = React.useState(5);
   const [growth, setGrowth] = React.useState(5);
@@ -729,12 +782,15 @@ export default function Home() {
   const parsedWeeklyUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
   const parsedUnemployment = parsedWeeklyUnemployment * 4.33; // weekly → monthly
   const parsedNetWorth = typeof netWorth === "number" ? netWorth : parseFloat(netWorth || "0");
+  const parsedDebtPayments = typeof debtPayments === "number" ? debtPayments : parseFloat(debtPayments || "0");
+
+  const effectiveExpenses = parsedExpenses + parsedDebtPayments;
 
   const UNEMPLOYMENT_MONTHS = 6;
   const monthlySafetyNet = parsedPartnerIncome + parsedFamilySupport + parsedUnemployment;
   const ongoingSafetyNet = parsedPartnerIncome + parsedFamilySupport; // after unemployment expires
-  const phase1Expenses = Math.max(0, parsedExpenses - monthlySafetyNet); // first 6 months
-  const phase2Expenses = Math.max(0, parsedExpenses - ongoingSafetyNet); // after unemployment ends
+  const phase1Expenses = Math.max(0, effectiveExpenses - monthlySafetyNet); // first 6 months
+  const phase2Expenses = Math.max(0, effectiveExpenses - ongoingSafetyNet); // after unemployment ends
 
   // Runway accounts for unemployment benefits lasting only 6 months
   const totalCash = parsedSavings + parsedSeverance;
@@ -756,9 +812,9 @@ export default function Home() {
 
   // Health insurance adjustment: ~$500/mo if no employer coverage
   const HEALTH_INSURANCE_COST = 500;
-  const adjustedExpenses = !hasHealthCoverage ? parsedExpenses + HEALTH_INSURANCE_COST : parsedExpenses;
+  const adjustedExpenses = !hasHealthCoverage ? effectiveExpenses + HEALTH_INSURANCE_COST : effectiveExpenses;
   const adjustedRunway = (() => {
-    if (hasHealthCoverage || parsedExpenses <= 0) return null;
+    if (hasHealthCoverage || effectiveExpenses <= 0) return null;
     const adjPhase1 = Math.max(0, adjustedExpenses - monthlySafetyNet);
     const adjPhase2 = Math.max(0, adjustedExpenses - ongoingSafetyNet);
     if (adjPhase1 <= 0) {
@@ -772,7 +828,7 @@ export default function Home() {
     return UNEMPLOYMENT_MONTHS + cashAfter / adjPhase2;
   })();
 
-  const monthlySurplus = parsedIncome - parsedExpenses;
+  const monthlySurplus = parsedIncome - effectiveExpenses;
   const runwayStay3 = (() => {
     const cash = totalCash + Math.max(0, monthlySurplus) * 3;
     if (phase1Expenses <= 0) return phase2Expenses <= 0 ? 999 : UNEMPLOYMENT_MONTHS + cash / phase2Expenses;
@@ -798,7 +854,7 @@ export default function Home() {
 
   // New calculations: savings target, safe quit date, readiness tier
   const TARGET_RUNWAY_MONTHS = 12;
-  const savingsTarget = parsedExpenses > 0 ? parsedExpenses * TARGET_RUNWAY_MONTHS : 0;
+  const savingsTarget = effectiveExpenses > 0 ? effectiveExpenses * TARGET_RUNWAY_MONTHS : 0;
   const savingsGap = Math.max(0, savingsTarget - totalCash);
   const monthsToTarget = monthlySurplus > 0 && savingsGap > 0
     ? Math.ceil(savingsGap / monthlySurplus)
@@ -831,7 +887,7 @@ export default function Home() {
     archetype
   );
   const yourMove = getYourMove(recommendedPath, burnoutDriver, runway, satisfaction, growth, parsedIncome, parsedExpenses);
-  const needleMovers = getWhatMovesTheNeedle(runway, parsedExpenses, parsedIncome, parsedSeverance, parsedPartnerIncome, hasHealthCoverage, adjustedRunway, runwayStay3, runwayStay6, safeQuitDate);
+  const needleMovers = getWhatMovesTheNeedle(runway, effectiveExpenses, parsedIncome, parsedSeverance, parsedPartnerIncome, hasHealthCoverage, adjustedRunway, runwayStay3, runwayStay6, safeQuitDate);
   const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
   // Field-count confidence score
   const optionalFieldLabels: { filled: boolean; label: string }[] = [
@@ -902,13 +958,21 @@ export default function Home() {
   if (parsedSeverance > 0) strengths.push(`Expected severance of $${Math.round(parsedSeverance).toLocaleString()} extends your effective runway.`);
   if (runway < 4 && runway > 0) riskFlags.push("Less than 4 months of runway creates significant pressure to accept the first opportunity available.");
   if (burnout >= 8 && runway < 6 && runway > 0) riskFlags.push("High burnout combined with a short runway is the highest-risk combination. Decisions made under this pressure are often regretted.");
-  if (parsedPartnerIncome === 0 && parsedFamilySupport === 0) riskFlags.push("No partner income or family support — your runway is entirely self-funded.");
+  if (parsedPartnerIncome === 0 && parsedFamilySupport === 0) riskFlags.push("Your runway is entirely self-funded. There\u2019s no external safety net factored in.");
   if (!hasHealthCoverage) riskFlags.push("You'll need marketplace health coverage, which typically costs $400–600/month and isn't factored into most people's initial estimates.");
   if (parsedIncome > 0 && parsedExpenses > 0 && parsedIncome <= parsedExpenses) riskFlags.push("You're currently spending more than you earn — your runway is actively shrinking.");
 
   const readinessTierColor =
     readinessTier === "Clear to Go" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
     readinessTier === "Prepare to Leave" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
+    "border-rose-700/50 bg-rose-900/30 text-rose-300";
+
+  const pressureState = getPressureState(runway, burnoutScore, monthlySurplus, hasSafetyNet);
+  const bestMove = getBestMove(pressureState, recommendedPath, burnoutScore, runway);
+
+  const pressureColor =
+    pressureState === "Low Pressure" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
+    pressureState === "Moderate Pressure" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
     "border-rose-700/50 bg-rose-900/30 text-rose-300";
 
   // Option comparison: leave now vs stay 3 vs stay 6
@@ -929,7 +993,7 @@ export default function Home() {
     const added = (runwayStay6 - runway).toFixed(1);
     if (runway >= 12) return `Diminishing returns — more money, less life.`;
     if (runwayStay6 >= 12) return `Gets you to safety (+${added} mo), but 6 more months.`;
-    return `+${added} months of cushion, still below 12-month target.`;
+    return `3 more months of work buys ${added} months of freedom.`;
   };
   const recommendedOption: OptionKey = (() => {
     if (readinessTier === "Clear to Go") return "now";
@@ -953,7 +1017,7 @@ export default function Home() {
   const moneyRunsOutDate = getMoneyRunsOutDate(runway);
   const { floorRunway, floorDate, adjustments: floorAdjustments } = getFloorRunway(
     totalCash,
-    parsedExpenses,
+    effectiveExpenses,
     hasHealthCoverage,
     parsedUnemployment,
     parsedPartnerIncome,
@@ -971,14 +1035,15 @@ export default function Home() {
     readinessTier,
     runwayStay3,
     burnoutScore,
-    moneyRunsOutDate
+    moneyRunsOutDate,
+    pressureState
   );
 
   const checklist = getChecklist(
     recommendedPath,
     runway,
     monthlySurplus,
-    parsedExpenses,
+    effectiveExpenses,
     totalCash,
     savingsTarget,
     safeQuitDate,
@@ -989,7 +1054,7 @@ export default function Home() {
     burnoutDriver
   );
 
-  const hasFinancialInputs = parsedExpenses > 0;
+  const hasFinancialInputs = effectiveExpenses > 0;
   const hasAnySavings = parsedSavings > 0 || parsedSeverance > 0;
   const showLiveRunway = hasAnySavings || hasFinancialInputs;
   const [copied, setCopied] = React.useState(false);
@@ -1048,7 +1113,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: gateEmail,
-          readinessTier,
+          pressureState,
           runway: runway >= 999 ? "covered" : runway.toFixed(1),
           archetype,
         }),
@@ -1205,6 +1270,7 @@ export default function Home() {
                   onChange={(e) => setExpenses(e.target.value === "" ? "" : Number(e.target.value))}
                   className={inputClass} placeholder="e.g. 3,500" />
               </div>
+              <p className="text-xs text-slate-400">Rent + food + insurance + transport + subscriptions. Exclude debt payments.</p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -1216,6 +1282,16 @@ export default function Home() {
                 className={inputClass} placeholder="e.g. 6,200" />
             </div>
             <p className="text-xs text-slate-400">After taxes. Used for scenario modeling.</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-200">Monthly debt payments</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
+              <input type="number" min={0} value={debtPayments}
+                onChange={(e) => setDebtPayments(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass} placeholder="0" />
+            </div>
+            <p className="text-xs text-slate-400">Student loans, car payment, minimum credit card payments.</p>
           </div>
         </section>
 
@@ -1308,14 +1384,14 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-slate-300">Unemployment (weekly)</label>
+                  <label className="block text-xs font-medium text-slate-300">Unemployment benefits</label>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                     <input type="number" min={0} value={unemploymentBenefits}
                       onChange={(e) => setUnemploymentBenefits(e.target.value === "" ? "" : Number(e.target.value))}
                       className={inputClass} placeholder="e.g. 450" />
                   </div>
-                  <p className="text-[10px] text-slate-500">Weekly benefit · first 6 months only</p>
+                  <p className="text-[10px] text-slate-500">Weekly amount, typically $300–$600. Leave blank if unsure.</p>
                 </div>
               </div>
             </details>
@@ -1339,7 +1415,7 @@ export default function Home() {
                   const planText = [
                     `RUNWAY PLAN — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
                     "",
-                    `Status: ${readinessTier}`,
+                    `${pressureState} · ${bestMove}`,
                     runwayLine,
                     `12-month target: $${Math.round(savingsTarget).toLocaleString()}`,
                     savingsGap > 0 ? `Gap to close: $${Math.round(savingsGap).toLocaleString()}` : "Target reached",
@@ -1375,11 +1451,14 @@ export default function Home() {
             {/* ── 1. THE BOTTOM LINE ── */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
               <div className="flex items-center gap-3">
-                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${readinessTierColor}`}>{readinessTier}</span>
+                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${pressureColor}`}>{pressureState}</span>
               </div>
 
-              {/* Full-sentence recommendation */}
-              <p className="mt-4 text-sm leading-relaxed text-slate-200">
+              {/* Best next move */}
+              <p className="mt-3 text-lg font-semibold text-white">{bestMove}</p>
+
+              {/* Recommendation */}
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
                 {fullRecommendation}
               </p>
 
@@ -1387,10 +1466,10 @@ export default function Home() {
               <div className="mt-5 grid grid-cols-3 gap-4 border-t border-slate-700 pt-5">
                 <div>
                   <p className={`text-2xl font-bold tabular-nums ${runwayColorClass}`}>
-                    {runway >= 999 ? "Covered" : runway === 0 ? "0" : runway.toFixed(1)}
+                    {formatRunwayHuman(runway)}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    {runway >= 999 ? "expenses covered" : "months of runway"}
+                    {runway >= 999 ? "expenses covered" : "runway"}
                     {moneyRunsOutDate && runway < 999 && <span className="text-slate-400"> · through {moneyRunsOutDate}</span>}
                   </p>
                 </div>
@@ -1431,7 +1510,7 @@ export default function Home() {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className={`text-lg font-bold tabular-nums ${opt.risk === "Low" ? "text-emerald-400" : opt.risk === "Moderate" ? "text-amber-400" : "text-rose-400"}`}>
-                                {opt.runway >= 999 ? "Covered" : `${opt.runway.toFixed(1)} mo`}
+                                {formatRunwayHuman(opt.runway)}
                               </p>
                               {opt.key !== "now" && (
                                 <p className="text-[10px] text-slate-500">
