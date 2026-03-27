@@ -1469,7 +1469,7 @@ export default function Home() {
                   <p className={`text-2xl font-bold tabular-nums ${savingsGap <= 0 ? "text-emerald-400" : "text-amber-400"}`}>
                     {savingsGap <= 0 ? "\u2713" : `$${Math.round(savingsGap / 1000)}k`}
                   </p>
-                  <p className="text-[11px] text-slate-500">{savingsGap <= 0 ? "target reached" : "gap to close"}</p>
+                  <p className="text-[11px] text-slate-500">{savingsGap <= 0 ? "target reached" : "short of 12-mo target"}</p>
                 </div>
               </div>
             </div>
