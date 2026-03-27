@@ -1108,7 +1108,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
           <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Decision Tool</p>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-400">
-            A structured assessment of your financial readiness to leave — and a concrete plan for what to do next.
+            See how much runway you actually have, what your risks are, and what to do next.
           </p>
           <p className="mt-2 text-xs text-slate-500">
             No account required. Nothing stored. Your data stays in your browser.
