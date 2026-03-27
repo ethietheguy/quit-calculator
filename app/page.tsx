@@ -10,23 +10,20 @@ type RecommendedPath =
   | "Build more runway before quitting"
   | "Consider taking a break or quitting";
 
-type Archetype =
-  | "Burned-Out Achiever"
-  | "Trapped Professional"
-  | "Restless Optimizer"
-  | "Early Career Crisis"
-  | "Comfortable Drifter"
-  | "None";
+type ClarityAnswer = "Yes" | "Somewhat" | "No";
 
-type BurnoutDriver =
-  | "Workload / hours"
-  | "Lack of meaning"
-  | "Toxic culture"
-  | "Lack of growth"
-  | "Compensation mismatch"
-  | "Not sure";
+type ExitTrigger =
+  | "Laid off or given notice"
+  | "Actively miserable"
+  | "Pursuing an opportunity"
+  | "Just exploring"
+  | "Something specific happened"
+  | "";
 
-type PressureState = "Low Pressure" | "Moderate Pressure" | "High Pressure";
+type ReadinessStage = "Exploring" | "Preparing" | "Ready to Act";
+type PrimaryGap = "financial clarity" | "next-step clarity" | "support" | "values alignment" | "none";
+type ExitPathway = "imposed timeline" | "deliberate exit" | "exploratory";
+type DecisionClarity = "High" | "Medium" | "Low";
 
 function getCareerTimingPerspective(age: number | ""): string | null {
   const a = typeof age === "number" ? age : parseFloat(String(age || "0"));
@@ -50,86 +47,85 @@ function getFinancialRisk(runway: number): RiskLevel {
   return "High";
 }
 
-function getBurnoutLevel(burnoutScore: number): RiskLevel {
-  if (burnoutScore >= 7) return "High";
-  if (burnoutScore >= 4.5) return "Moderate";
+function clarityScore(a: ClarityAnswer): number {
+  return a === "Yes" ? 2 : a === "Somewhat" ? 1 : 0;
+}
+
+function getReadinessStage(q1: ClarityAnswer, q2: ClarityAnswer, q3: ClarityAnswer, q4: ClarityAnswer): ReadinessStage {
+  const total = clarityScore(q1) + clarityScore(q2) + clarityScore(q3) + clarityScore(q4);
+  if (total >= 6) return "Ready to Act";
+  if (total >= 3) return "Preparing";
+  return "Exploring";
+}
+
+function getDecisionClarityLevel(q1: ClarityAnswer, q2: ClarityAnswer): DecisionClarity {
+  const total = clarityScore(q1) + clarityScore(q2);
+  if (total >= 3) return "High";
+  if (total >= 1) return "Medium";
   return "Low";
 }
 
-function getArchetype(
-  burnoutScore: number,
-  satisfaction: number,
-  growth: number,
-  runway: number,
-  financialRisk: RiskLevel
-): Archetype {
-  const highBurnout = burnoutScore >= 7;
-  const lowBurnout = burnoutScore < 4.5;
-  const moderateBurnout = !highBurnout && !lowBurnout; // between 4.5 and 7
-  const strongRunway = runway >= 12 || financialRisk === "Low";
-  const weakRunway = runway < 6 || financialRisk === "High";
-  const lowSatisfaction = satisfaction <= 4;
-  const lowGrowth = growth <= 4;
+function getPrimaryGap(q1: ClarityAnswer, q2: ClarityAnswer, q3: ClarityAnswer, q4: ClarityAnswer): PrimaryGap {
+  const scores: { gap: PrimaryGap; score: number }[] = [
+    { gap: "next-step clarity", score: clarityScore(q1) },
+    { gap: "financial clarity", score: clarityScore(q2) },
+    { gap: "support", score: clarityScore(q3) },
+    { gap: "values alignment", score: clarityScore(q4) },
+  ];
+  const min = Math.min(...scores.map((s) => s.score));
+  if (min >= 2) return "none";
+  return scores.find((s) => s.score === min)!.gap;
+}
 
-  // Early Career Crisis: low satisfaction + low growth + moderate burnout.
-  if (lowSatisfaction && lowGrowth && moderateBurnout) {
-    return "Early Career Crisis";
-  }
-
-  // Burned-Out Achiever: high burnout + strong runway.
-  if (highBurnout && strongRunway) {
-    return "Burned-Out Achiever";
-  }
-
-  // Trapped Professional: high burnout + weak runway.
-  if (highBurnout && weakRunway) {
-    return "Trapped Professional";
-  }
-
-  // Restless Optimizer: low burnout but low satisfaction or growth.
-  if (lowBurnout && (lowSatisfaction || lowGrowth)) {
-    return "Restless Optimizer";
-  }
-
-  // Comfortable Drifter: low burnout but also low growth.
-  if (lowBurnout && lowGrowth) {
-    return "Comfortable Drifter";
-  }
-
-  return "None";
+function getExitPathway(trigger: ExitTrigger): ExitPathway {
+  if (trigger === "Laid off or given notice" || trigger === "Something specific happened") return "imposed timeline";
+  if (trigger === "Actively miserable" || trigger === "Pursuing an opportunity") return "deliberate exit";
+  return "exploratory";
 }
 
 function getRecommendedPath(
   financialRisk: RiskLevel,
-  burnoutLevel: RiskLevel,
-  runway: number
+  readinessStage: ReadinessStage,
+  exitPathway: ExitPathway,
+  runway: number,
+  valuesAlignment: ClarityAnswer
 ): RecommendedPath {
-  if (burnoutLevel === "High" && financialRisk === "Low") {
+  // Imposed timeline (layoff) — urgency changes the calculus
+  if (exitPathway === "imposed timeline") {
+    if (financialRisk === "Low") return "Consider taking a break or quitting";
+    if (financialRisk === "Moderate") return "Search while employed";
+    return "Build more runway before quitting";
+  }
+
+  // Ready to act + financially safe
+  if (readinessStage === "Ready to Act" && financialRisk === "Low") {
     return "Consider taking a break or quitting";
   }
 
-  if (burnoutLevel === "High" && financialRisk === "Moderate") {
+  // Values are clearly misaligned — staying is costly
+  if (valuesAlignment === "Yes" && financialRisk !== "High") {
     return "Search while employed";
   }
 
-  if (burnoutLevel === "High" && financialRisk === "High") {
+  if (valuesAlignment === "Yes" && financialRisk === "High") {
     return "Build more runway before quitting";
   }
 
-  if (burnoutLevel === "Moderate" && financialRisk !== "High") {
+  // Preparing stage
+  if (readinessStage === "Preparing" && financialRisk !== "High") {
     return "Search while employed";
   }
 
-  if (burnoutLevel === "Moderate" && financialRisk === "High") {
+  if (readinessStage === "Preparing" && financialRisk === "High") {
     return "Build more runway before quitting";
   }
 
-  // Low burnout
+  // Exploring — no clear urgency
   if (financialRisk === "High" && runway < 3) {
     return "Build more runway before quitting";
   }
 
-  if (financialRisk === "Low" && burnoutLevel === "Low") {
+  if (financialRisk === "Low") {
     return "Search while employed";
   }
 
@@ -149,48 +145,34 @@ function getHeadline(path: RecommendedPath): string {
   }
 }
 
-function getPressureState(
-  runway: number,
-  burnoutScore: number,
-  monthlySurplus: number,
-  hasSafetyNet: boolean
-): PressureState {
-  // High Pressure: financial margin is dangerously low or actively shrinking
-  if (runway < 6 && runway > 0) return "High Pressure";
-  if (runway < 9 && burnoutScore >= 8) return "High Pressure";
-  if (monthlySurplus < 0 && runway < 12) return "High Pressure";
-
-  // Low Pressure: real room to be deliberate
-  if (runway >= 12 || (runway >= 9 && hasSafetyNet)) {
-    if (burnoutScore < 8) return "Low Pressure";
-    return "Moderate Pressure"; // high burnout compresses even strong financial positions
-  }
-
-  // Everything else
-  return "Moderate Pressure";
-}
-
 function getBestMove(
-  pressureState: PressureState,
+  readinessStage: ReadinessStage,
   path: RecommendedPath,
-  burnoutScore: number,
+  exitPathway: ExitPathway,
   runway: number
 ): string {
-  if (pressureState === "Low Pressure") {
-    if (path === "Consider taking a break or quitting") {
-      return burnoutScore >= 8 ? "Decompress, then decide" : "Explore and transition";
-    }
-    return "Search deliberately";
+  if (exitPathway === "imposed timeline") {
+    if (runway >= 12) return "You have time — use it strategically";
+    if (runway >= 6) return "Stabilize your finances, then search";
+    return "Lock down income before the clock runs out";
   }
-  if (pressureState === "Moderate Pressure") {
+
+  if (readinessStage === "Ready to Act") {
+    if (path === "Consider taking a break or quitting") return "Make the move";
+    return "Execute your plan";
+  }
+
+  if (readinessStage === "Preparing") {
     if (path === "Search while employed") return "Search while you save";
     if (path === "Build more runway before quitting") return "Set a quit date and build toward it";
-    return "Protect your options";
+    return "Close the gaps, then decide";
   }
-  // High Pressure
+
+  // Exploring
   if (runway < 3) return "Don\u2019t quit without an offer";
   if (path === "Build more runway before quitting") return "Extend your runway first";
-  return "Stabilize, then move";
+  if (path === "Stay and improve") return "Get clear before you move";
+  return "Explore deliberately";
 }
 
 function formatRunwayHuman(runway: number): string {
@@ -202,59 +184,40 @@ function formatRunwayHuman(runway: number): string {
   return `${months} mo ${weeks} wk`;
 }
 
-function getBurnoutDriverInsight(burnoutDriver: BurnoutDriver): string | null {
-  switch (burnoutDriver) {
-    case "Lack of meaning":
-      return "Given that meaning is a key driver, the core question may be career alignment — what work actually connects to what you care about.";
-    case "Workload / hours":
-      return "With workload driving burnout, the levers are often role boundaries, scope, or a company change rather than mindset alone.";
-    case "Toxic culture":
-      return "When the environment is corrosive, changing jobs or teams can matter more than fixing your response to it.";
-    case "Lack of growth":
-      return "Trajectory concerns are central here — feeling underused or stalled often needs stretch roles, learning, or a deliberate pivot.";
-    case "Compensation mismatch":
-      return "Money misalignment blends practical strain with questions of fairness; clarifying needs and market value can clarify next steps.";
-    default:
-      return null;
-  }
-}
+function getDecisionMatrixRead(
+  q1: ClarityAnswer,
+  q2: ClarityAnswer,
+  q3: ClarityAnswer,
+  q4: ClarityAnswer,
+  exitPathway: ExitPathway
+): string {
+  const total = clarityScore(q1) + clarityScore(q2) + clarityScore(q3) + clarityScore(q4);
 
-function getDecisionConfidence(
-  archetype: Archetype,
-  financialRisk: RiskLevel,
-  burnoutLevel: RiskLevel,
-  path: RecommendedPath,
-  runway: number
-): { level: "High" | "Medium" | "Low"; explanation: string } {
-  const signalsAlign =
-    archetype !== "None" &&
-    ((path === "Consider taking a break or quitting" && financialRisk === "Low" && burnoutLevel === "High") ||
-      (path === "Build more runway before quitting" && financialRisk === "High") ||
-      (path === "Search while employed" && (financialRisk === "Low" || financialRisk === "Moderate")) ||
-      (path === "Stay and improve" && burnoutLevel === "Low"));
-
-  const runwaySupports =
-    (path === "Consider taking a break or quitting" && runway >= 12) ||
-    (path === "Build more runway before quitting" && runway < 6) ||
-    (path === "Search while employed" && runway >= 3) ||
-    (path === "Stay and improve");
-
-  if (signalsAlign && runwaySupports) {
-    return {
-      level: "High",
-      explanation: "Your inputs point in a consistent direction; the recommendation reflects strong alignment between burnout, finances, and trajectory.",
-    };
+  if (exitPathway === "imposed timeline") {
+    return "You\u2019re working against a clock. The plan below prioritizes what to lock down first.";
   }
-  if (archetype === "None" || (!signalsAlign && !runwaySupports)) {
-    return {
-      level: "Low",
-      explanation: "Signals are mixed or incomplete. Use this as a starting point and gather more input from people who know your situation.",
-    };
+
+  if (total >= 7) {
+    return "You\u2019re further along than most people who use this tool. The numbers below will either confirm your instinct or surface what you\u2019re missing.";
   }
-  return {
-    level: "Medium",
-    explanation: "Some signals align; others are less clear. The recommendation is a reasonable default, but your judgement matters.",
-  };
+
+  if (total >= 5) {
+    return "You have some clarity but not the full picture yet. The assessment below will sharpen what\u2019s still fuzzy.";
+  }
+
+  if (clarityScore(q2) === 0 && clarityScore(q3) === 0) {
+    return "You\u2019re in the hardest part \u2014 feeling the pull to leave but not yet clear on the numbers or who to talk to. That\u2019s exactly what this is for.";
+  }
+
+  if (clarityScore(q1) === 0) {
+    return "You know something needs to change but haven\u2019t landed on what comes next. The plan below starts there.";
+  }
+
+  if (clarityScore(q2) === 0) {
+    return "The financial picture is still unclear. The numbers below will give you something concrete to work with.";
+  }
+
+  return "You\u2019re early in this process. That\u2019s fine \u2014 better to think it through now than to react under pressure later.";
 }
 
 function getNormalizationParagraph(age: number | ""): string | null {
@@ -265,103 +228,109 @@ function getNormalizationParagraph(age: number | ""): string | null {
 
 function getSituationSummary(
   runway: number,
-  burnoutScore: number,
   financialRisk: RiskLevel,
-  burnoutLevel: RiskLevel,
   path: RecommendedPath,
-  archetype: Archetype
+  readinessStage: ReadinessStage,
+  primaryGap: PrimaryGap
 ): string {
   const runwayText =
     runway <= 0
       ? "Right now, the tool cannot see a clear financial runway because monthly expenses are zero or missing."
-      : `You have about ${runway.toFixed(
-          1
-        )} months of runway based on what you entered.`;
-
-  const burnoutText = `Your burnout score is ${burnoutScore.toFixed(
-    1
-  )} out of 10, which this tool treats as ${burnoutLevel.toLowerCase()} burnout.`;
+      : runway >= 999
+      ? "Your safety net fully covers your expenses."
+      : `You have about ${runway.toFixed(1)} months of runway based on what you entered.`;
 
   const riskText = `Financially, this looks like ${financialRisk.toLowerCase()} risk.`;
 
-  const archetypeText =
-    archetype !== "None"
-      ? ` In this rough framework you look most like a "${archetype}".`
-      : "";
+  const gapText = primaryGap !== "none"
+    ? ` The biggest gap in your readiness right now is ${primaryGap}.`
+    : "";
 
   if (path === "Consider taking a break or quitting") {
-    return `${runwayText} ${burnoutText} ${riskText}${archetypeText} Together, that suggests you have enough buffer to seriously consider stepping away if that aligns with your values and support system.`;
+    return `${runwayText} ${riskText}${gapText} Together, that suggests you have enough buffer to seriously consider stepping away if that aligns with your values and support system.`;
   }
 
   if (path === "Build more runway before quitting") {
-    return `${runwayText} ${burnoutText} ${riskText}${archetypeText} That points to focusing on stability first so that any exit is on your terms, not forced by money stress.`;
+    return `${runwayText} ${riskText}${gapText} That points to focusing on stability first so that any exit is on your terms, not forced by money stress.`;
   }
 
   if (path === "Search while employed") {
-    return `${runwayText} ${burnoutText} ${riskText}${archetypeText} That mix often pairs well with keeping your current income while you quietly explore roles that fit you better.`;
+    return `${runwayText} ${riskText}${gapText} That mix often pairs well with keeping your current income while you quietly explore roles that fit you better.`;
   }
 
   // Stay and improve
-  return `${runwayText} ${burnoutText} ${riskText}${archetypeText} Given that, this tool leans toward improving your current situation before making any drastic moves.`;
+  return `${runwayText} ${riskText}${gapText} Given that, this tool leans toward improving your current situation before making any drastic moves.`;
 }
 
-function getCareerHealthLabel(score: number): "Strong trajectory" | "Plateau" | "Declining" {
-  if (score >= 10) return "Strong trajectory";
-  if (score >= 4) return "Plateau";
-  return "Declining";
-}
-
-function getYourMove(path: RecommendedPath, burnoutDriver: BurnoutDriver, runway: number, satisfaction: number, growth: number, income: number, expenses: number): { thisWeek: string; thisMonth: string; beforeYouDecide: string } {
+function getYourMove(
+  path: RecommendedPath,
+  primaryGap: PrimaryGap,
+  exitPathway: ExitPathway,
+  runway: number,
+  income: number,
+  expenses: number,
+  q3Support: ClarityAnswer
+): { thisWeek: string; thisMonth: string; beforeYouDecide: string } {
   const monthlySurplus = income - expenses;
 
-  // THIS WEEK — one specific action
+  // THIS WEEK — one specific action, driven by primary gap
   let thisWeek: string;
-  if (path === "Consider taking a break or quitting") {
-    thisWeek = "Tell one person you trust that you're seriously considering leaving. Not for advice — to hear yourself say it out loud.";
+  if (exitPathway === "imposed timeline") {
+    thisWeek = "Get your exact last day, severance terms, and benefits end date in writing. Everything else follows from those dates.";
+  } else if (primaryGap === "next-step clarity") {
+    thisWeek = "Write down 3 realistic scenarios for what comes after this job. Not dream jobs — plausible next moves. You need options to evaluate, not a fantasy to chase.";
+  } else if (primaryGap === "financial clarity") {
+    if (monthlySurplus > 0) {
+      thisWeek = `Set up a separate savings account with a $${Math.round(monthlySurplus * 0.7).toLocaleString()}/mo auto-transfer. Automate the runway you need.`;
+    } else {
+      thisWeek = "List every subscription and recurring charge. Most people find $200\u2013400/mo they forgot about. That\u2019s not budgeting \u2014 it\u2019s buying time.";
+    }
+  } else if (primaryGap === "support") {
+    thisWeek = "Tell one person you trust that you\u2019re seriously considering leaving. Not for advice \u2014 to hear yourself say it out loud.";
+  } else if (path === "Consider taking a break or quitting") {
+    thisWeek = "Tell one person you trust that you\u2019re seriously considering leaving. Not for advice \u2014 to hear yourself say it out loud.";
   } else if (path === "Search while employed") {
-    thisWeek = "Reach out to 2 people in roles you find interesting. Ask: 'What's the worst part nobody talks about?' You're gathering intelligence, not job hunting.";
+    thisWeek = "Reach out to 2 people in roles you find interesting. Ask: \u2018What\u2019s the worst part nobody talks about?\u2019 You\u2019re gathering intelligence, not job hunting.";
   } else if (path === "Build more runway before quitting") {
     if (monthlySurplus > 0) {
       thisWeek = `Set up a separate savings account with a $${Math.round(monthlySurplus * 0.7).toLocaleString()}/mo auto-transfer. Automate the runway you need.`;
     } else {
-      thisWeek = "List every subscription and recurring charge. Most people find $200–400/mo they forgot about. That's not budgeting — it's buying time.";
+      thisWeek = "List every subscription and recurring charge. Most people find $200\u2013400/mo they forgot about. That\u2019s not budgeting \u2014 it\u2019s buying time.";
     }
   } else {
     thisWeek = "Write down the 3 things that would need to change for you to feel good about staying. Be honest about which ones are in your control.";
   }
 
-  // THIS MONTH — the career move
+  // THIS MONTH — the career move, driven by primary gap and pathway
   let thisMonth: string;
-  if (burnoutDriver === "Toxic culture") {
-    thisMonth = "Start planning your exit. No amount of boundary-setting fixes a broken culture. The same work at a healthy company will feel like a different career.";
-  } else if (burnoutDriver === "Lack of meaning") {
-    thisMonth = satisfaction <= 4
-      ? "Get clear on what 'meaningful' actually means to you — impact, autonomy, creative expression. The answer changes where you should look."
-      : "Volunteer your skills somewhere that matters for 5 hours a week. See if that changes the equation before making a bigger move.";
-  } else if (burnoutDriver === "Workload / hours") {
-    thisMonth = "Run one experiment: say no to something you'd normally accept. If nothing breaks, do it again. If your boss punishes boundaries, that's your answer.";
-  } else if (burnoutDriver === "Lack of growth") {
-    thisMonth = "Ask your manager what the next level looks like. If they can't articulate it clearly in two weeks, they're telling you there isn't one here.";
-  } else if (burnoutDriver === "Compensation mismatch") {
-    thisMonth = "Get your market number — levels.fyi, Glassdoor, or ask peers directly. If you're 15%+ below market, you have a data problem, not a motivation problem.";
+  if (exitPathway === "imposed timeline") {
+    thisMonth = "File for unemployment, research health coverage (COBRA vs. marketplace), and reach out to 5 people in your network. You\u2019re building a bridge, not just jumping.";
+  } else if (primaryGap === "next-step clarity") {
+    thisMonth = "Spend 5 hours this month on informational conversations with people doing work you\u2019re curious about. You\u2019re not job hunting \u2014 you\u2019re testing hypotheses about what fits.";
+  } else if (primaryGap === "financial clarity") {
+    thisMonth = "Build a real post-exit budget: housing, insurance, food, debt, and a 15% buffer for surprises. The number you\u2019re afraid of is usually less scary once it\u2019s specific.";
+  } else if (primaryGap === "values alignment") {
+    thisMonth = "Keep a 2-week log of what drains you vs. what energizes you. The pattern will tell you whether this is a bad job or a bad fit \u2014 those require different solutions.";
+  } else if (q3Support === "No") {
+    thisMonth = "Find a sounding board \u2014 a coach, a mentor, a trusted friend outside your company. Decisions made in isolation tend to be either too cautious or too reckless.";
+  } else if (path === "Consider taking a break or quitting") {
+    thisMonth = "Draft a 90-day plan for your first 3 months after leaving. What will you do with the time? Not having an answer is a signal worth paying attention to.";
   } else {
-    thisMonth = satisfaction <= 3 && growth <= 3
-      ? "Map what you'd do if money weren't a factor, then find the version that pays. Low satisfaction and low growth together isn't a rough patch — it's a slow decline."
-      : "Keep a 2-week log of what drains you vs. what energizes you. The pattern will point somewhere more useful than a gut feeling.";
+    thisMonth = "Reach out to 3 people in roles or companies you\u2019re curious about. Ask what they\u2019d change about their job. Real intelligence beats job board browsing.";
   }
 
   // BEFORE YOU DECIDE — the financial grounding
   let beforeYouDecide: string;
   if (runway >= 999) {
-    beforeYouDecide = "Your safety net covers you. The risk isn't financial — it's staying too long because you can afford to. Set a decision deadline and honor it.";
+    beforeYouDecide = "Your safety net covers you. The risk isn\u2019t financial \u2014 it\u2019s staying too long because you can afford to. Set a decision deadline and honor it.";
   } else if (runway >= 12) {
     beforeYouDecide = "You have over a year of runway. Stop using money as the reason to stay. The real question: what are you afraid happens if you actually leave?";
   } else if (monthlySurplus > 0 && runway < 12) {
     beforeYouDecide = `Every month you stay adds ${(monthlySurplus / expenses).toFixed(1)} months of runway. Pick your target number and work backward to a quit date.`;
   } else if (runway < 3) {
-    beforeYouDecide = "With less than 3 months of runway, don't quit without an offer or a concrete plan. That's not fear — it's strategy.";
+    beforeYouDecide = "With less than 3 months of runway, don\u2019t quit without an offer or a concrete plan. That\u2019s not fear \u2014 it\u2019s strategy.";
   } else {
-    beforeYouDecide = "Get to 6 months of runway. That's the threshold where most people stop making fear-based decisions.";
+    beforeYouDecide = "Get to 6 months of runway. That\u2019s the threshold where most people stop making fear-based decisions.";
   }
 
   return { thisWeek, thisMonth, beforeYouDecide };
@@ -452,56 +421,41 @@ function getWhatMovesTheNeedle(
 }
 
 function getRealityCheck(
-  archetype: Archetype,
-  careerHealthLabel: string,
+  readinessStage: ReadinessStage,
+  primaryGap: PrimaryGap,
+  exitPathway: ExitPathway,
   financialRisk: RiskLevel,
-  burnoutDriver: BurnoutDriver
+  valuesAlignment: ClarityAnswer
 ): string {
   const base =
     "This tool can surface patterns, but it cannot see your full life, identity, or responsibilities.";
 
-  if (burnoutDriver === "Toxic culture") {
-    return `${base} When the environment itself is corrosive, changing jobs or teams can matter more than fixing your mindset. It is reasonable to prioritise safer, healthier contexts over staying to prove you can endure more.`;
+  if (exitPathway === "imposed timeline") {
+    return `${base} When a timeline is imposed on you, the instinct is to rush. Resist it where you can. Even with a deadline, most decisions benefit from a week of structured thinking rather than a weekend of panic.`;
   }
 
-  if (burnoutDriver === "Lack of meaning") {
-    return `${base} If meaning is the main source of friction, you may need more than tweaks to hours or tasks. Treat this as a nudge to experiment toward work that feels more connected to what you care about.`;
+  if (primaryGap === "support") {
+    return `${base} Making a career decision without a sounding board is like navigating without a map. The numbers here are useful, but they are not a substitute for a real conversation with someone who knows you.`;
   }
 
-  if (burnoutDriver === "Workload / hours") {
-    return `${base} Chronic overwork can make everything feel more fragile than the numbers alone suggest. Even small experiments with boundaries, pacing, or scope can shift how sustainable this role feels.`;
+  if (primaryGap === "values alignment") {
+    return `${base} If you are not sure whether staying is actually costing you something important, slow down. The urge to leave can be a signal or a symptom. A two-week observation log can help you tell the difference.`;
   }
 
-  if (burnoutDriver === "Lack of growth") {
-    return `${base} Feeling underused or stalled is a common mid‑career tension. You do not have to burn everything down to restart; steady bets on learning, projects, and stretch roles compound over time.`;
+  if (valuesAlignment === "Yes" && financialRisk === "Low") {
+    return `${base} The numbers here suggest you are more resourced than your inner critic might admit. When staying is genuinely costing you something and the money supports the move, the remaining hesitation is usually about identity, not logistics.`;
   }
 
-  if (burnoutDriver === "Compensation mismatch") {
-    return `${base} Money misalignment often blends practical strain with questions of fairness and self‑worth. Clarifying your real needs and market value can help you negotiate, search, or redesign your path with more confidence.`;
+  if (valuesAlignment === "Yes" && financialRisk === "High") {
+    return `${base} You feel the cost of staying, but the money is tight. That is the hardest combination. You do not need to solve everything this month; steadily improving your financial position is still real progress toward the exit you want.`;
   }
 
-  if (archetype === "Early Career Crisis") {
-    return `${base} Early‑career turbulence is common, even when it feels intensely personal. You have time to course‑correct, and small, thoughtful moves compound more than dramatic swings made in panic.`;
+  if (readinessStage === "Exploring") {
+    return `${base} You are early in this process, and that is fine. Restlessness can be a healthy signal that you are ready for more depth or alignment \u2014 not a guarantee that you picked the wrong path. Treat this as data, not a verdict.`;
   }
 
-  if (archetype === "Burned-Out Achiever") {
-    return `${base} If achievement has been your main compass so far, it makes sense that slowing down feels risky. You are allowed to choose a version of success that protects your health, even if that looks different from your peers.`;
-  }
-
-  if (archetype === "Trapped Professional") {
-    return `${base} Feeling trapped is often a sign that money and identity have become tightly linked. You do not need to solve everything this month; steadily improving your options is still real progress.`;
-  }
-
-  if (archetype === "Restless Optimizer") {
-    return `${base} Restlessness can be a healthy signal that you are ready for more depth or alignment, not a guarantee that you picked the wrong path. Treat this as data to design your next chapter, not as a verdict on the last one.`;
-  }
-
-  if (careerHealthLabel === "Strong trajectory") {
-    return `${base} The numbers here suggest you are more resourced than your inner critic might admit. It is okay to make changes from a place of strength rather than waiting for a crisis.`;
-  }
-
-  if (careerHealthLabel === "Declining") {
-    return `${base} A declining trajectory does not mean you have failed; it means your current setup is not sustainable as‑is. Reaching out early for support is a strength, not a weakness.`;
+  if (readinessStage === "Ready to Act") {
+    return `${base} Your inputs suggest you have thought this through. The risk at this stage is not impulsiveness \u2014 it is overthinking a decision you have already made. Trust the preparation you have done.`;
   }
 
   return `${base} Whatever you decide, try to move in conversation with people you trust and at a pace your finances can realistically support.`;
@@ -518,57 +472,57 @@ function getCareerPhaseLabel(age: number | ""): string | null {
 }
 
 function getCoreTension(
-  archetype: Archetype,
-  burnoutDriver: BurnoutDriver,
+  readinessStage: ReadinessStage,
+  primaryGap: PrimaryGap,
+  exitPathway: ExitPathway,
   financialRisk: RiskLevel,
   runway: number,
-  burnoutScore: number
+  valuesAlignment: ClarityAnswer,
+  nextStepClarity: ClarityAnswer
 ): string {
   // This names the REAL thing the person is wrestling with
 
-  if (archetype === "Burned-Out Achiever") {
-    if (burnoutDriver === "Workload / hours") {
-      return "You've built real financial security by working at a pace your body and mind can no longer sustain. The tension isn't whether you can afford to leave — it's whether you can let go of the identity that got you here.";
-    }
-    if (burnoutDriver === "Lack of meaning") {
-      return "You're good at what you do and you've been rewarded for it, but the work has stopped meaning anything to you. The hard part isn't money or options — it's admitting that success on someone else's terms isn't enough anymore.";
-    }
-    return "You've earned the right to step back, but achievers often feel like rest is failure. The real question: can you sit with discomfort long enough to figure out what you actually want, or will you just sprint into the next thing?";
+  if (exitPathway === "imposed timeline" && financialRisk === "High") {
+    return "You didn\u2019t choose this timeline and the money is tight. That\u2019s the hardest combination. The goal isn\u2019t to feel better about the situation \u2014 it\u2019s to make the best moves available to you right now, even if they\u2019re not the ones you\u2019d choose with more time.";
   }
 
-  if (archetype === "Trapped Professional") {
-    if (financialRisk === "High") {
-      return "You feel stuck because you are — high burnout and tight finances is the hardest combination. But 'trapped' is a feeling, not a fact. The path out is slower than you want, but it exists: stabilize the money, then make the move.";
-    }
-    return "The trap feels total, but it's usually one or two specific things — a boss, a commute, a role that shrank. Name the actual constraint. The way out is usually narrower and more specific than 'change everything.'";
+  if (exitPathway === "imposed timeline") {
+    return "A forced timeline removes one kind of uncertainty but creates another. You don\u2019t have to decide what you want forever \u2014 you just have to decide what you\u2019re doing next. Focus there.";
   }
 
-  if (archetype === "Restless Optimizer") {
-    return "Nothing is technically wrong, and that's what makes this so confusing. You're not burned out enough to justify quitting and not satisfied enough to stop thinking about it. The risk isn't leaving — it's spending years in comfortable limbo.";
+  if (valuesAlignment === "Yes" && financialRisk === "Low" && nextStepClarity === "Yes") {
+    return "You know what\u2019s costing you, you know what comes next, and the money supports the move. The only thing between you and action is the fear of being wrong. That fear doesn\u2019t go away \u2014 you just have to decide it\u2019s worth walking through.";
   }
 
-  if (archetype === "Early Career Crisis") {
-    return "Early career feels like everyone else has it figured out and you're behind. They don't and you're not. The real tension is between wanting certainty and needing to experiment. You can't think your way to the right career — you have to try things.";
+  if (valuesAlignment === "Yes" && financialRisk === "Low") {
+    return "You can afford to leave and staying is costing you something real. The tension isn\u2019t financial \u2014 it\u2019s that you haven\u2019t fully committed to what comes next. Name what\u2019s holding you back. That\u2019s where the real decision lives.";
   }
 
-  if (archetype === "Comfortable Drifter") {
-    return "Your situation is stable enough that there's no crisis forcing a decision. That's a luxury and a trap. The tension is between comfort now and regret later. The question isn't 'should I quit?' — it's 'what am I drifting toward?'";
+  if (valuesAlignment === "Yes" && financialRisk === "High") {
+    return "Staying is costing you something important but you can\u2019t afford to leave yet. That\u2019s a real bind, not a failure of nerve. The path out is slower than you want, but it exists: stabilize the money, then make the move.";
   }
 
-  // Generic fallback based on burnout + finances
-  if (burnoutScore >= 7 && financialRisk === "Low") {
-    return "You can afford to leave and your body is telling you to. The only thing keeping you is inertia, identity, or fear of what comes next. Name which one it is — that's where the real decision lives.";
+  if (valuesAlignment === "No" && readinessStage === "Exploring") {
+    return "You\u2019re not sure staying is actually hurting you, and you don\u2019t have a clear next step. That\u2019s not indecision \u2014 it\u2019s the honest starting point. The risk isn\u2019t making the wrong move; it\u2019s spending years in comfortable limbo because no single moment is bad enough to force a change.";
   }
 
-  if (burnoutScore >= 7 && financialRisk === "High") {
-    return "You need to leave but can't afford to yet. That's the hardest position to be in. The goal isn't to feel better about staying — it's to build a bridge out as fast as possible while protecting your mental health in the meantime.";
+  if (primaryGap === "support") {
+    return "You\u2019re carrying this decision alone, and that makes everything harder. Decisions made in isolation tend to be either too cautious or too impulsive. The most useful thing you can do right now isn\u2019t financial \u2014 it\u2019s finding someone to think this through with.";
   }
 
-  if (burnoutScore < 4) {
-    return "Your burnout is low, which means this isn't a crisis — it's a question of direction. You have the clarity and energy to make a thoughtful move rather than a desperate one. Don't waste that advantage by overthinking it.";
+  if (primaryGap === "financial clarity") {
+    return "The financial picture is the thing you\u2019re most uncertain about, and that uncertainty is keeping you stuck. You don\u2019t need perfect numbers \u2014 you need a realistic range. Once the money question has a real answer instead of a feeling, the rest gets clearer.";
   }
 
-  return "Your situation has real tension in it, and there's no clean answer. That's normal. The goal isn't to find the perfect move — it's to find one that's good enough and that you can commit to without looking back every week.";
+  if (primaryGap === "next-step clarity") {
+    return "You know something needs to change but haven\u2019t figured out what comes after. That\u2019s the hardest gap to close because it requires experimentation, not just planning. You can\u2019t think your way to the right career \u2014 you have to try things.";
+  }
+
+  if (readinessStage === "Ready to Act" && financialRisk !== "High") {
+    return "Your readiness is high and the money works. The only thing left is the leap itself. Most people at this stage aren\u2019t missing information \u2014 they\u2019re waiting for certainty that never comes. Set a date and hold it.";
+  }
+
+  return "Your situation has real tension in it, and there\u2019s no clean answer. That\u2019s normal. The goal isn\u2019t to find the perfect move \u2014 it\u2019s to find one that\u2019s good enough and that you can commit to without looking back every week.";
 }
 
 function getMoneyRunsOutDate(runway: number): string | null {
@@ -633,40 +587,52 @@ function getFullRecommendation(
   safeQuitDate: string | null,
   monthlySurplus: number,
   totalCash: number,
-  readinessTier: string,
   runwayStay3: number,
-  burnoutScore: number,
   moneyRunsOutDate: string | null,
-  pressureState: PressureState
+  readinessStage: ReadinessStage,
+  exitPathway: ExitPathway
 ): string {
   const targetStr = `$${Math.round(savingsTarget).toLocaleString()}`;
   const gapStr = `$${Math.round(savingsGap).toLocaleString()}`;
   const dateStr = moneyRunsOutDate ? `Your savings would last until ${moneyRunsOutDate}. ` : "";
 
-  if (pressureState === "Low Pressure") {
+  // Imposed timeline gets its own logic
+  if (exitPathway === "imposed timeline") {
+    if (runway >= 12) {
+      return `${dateStr}You have a timeline imposed on you, but the money gives you room. Use the transition period to be strategic, not reactive.`;
+    }
+    if (runway >= 6) {
+      return `${dateStr}You\u2019re on a clock, but you have enough runway to search thoughtfully. Prioritize income replacement over dream-job hunting.`;
+    }
+    return `${dateStr}Your timeline is imposed and your margin is thin. Prioritize income replacement immediately \u2014 refinement comes after stability.`;
+  }
+
+  // Ready to Act
+  if (readinessStage === "Ready to Act") {
     if (runway >= 18) {
       return `${dateStr}You have the margin to be fully deliberate about what comes next. This isn\u2019t a financial decision anymore \u2014 it\u2019s a strategic one.`;
     }
     if (runway >= 12) {
       return `${dateStr}You\u2019ve cleared the 12-month safety threshold. You can afford to move on your own timeline, not someone else\u2019s.`;
     }
-    return `${dateStr}With a safety net backing you, you have more room than the raw number suggests. Use it wisely.`;
+    return `${dateStr}Your readiness is high but your financial margin isn\u2019t there yet. Close the gap to ${targetStr} before you act.`;
   }
 
-  if (pressureState === "High Pressure") {
+  // Exploring — financial risk is the main driver
+  if (readinessStage === "Exploring") {
     if (monthlySurplus < 0) {
       return `You\u2019re spending more than you earn \u2014 your runway is shrinking, not growing. ${dateStr}Before you can plan an exit, you need to stop the bleeding: cut expenses or increase income.`;
     }
     if (runway < 3) {
       return `${dateStr}With less than 3 months of margin, you don\u2019t have room for an unplanned exit. Your priority is creating breathing room \u2014 not making a career decision under this kind of pressure.`;
     }
-    if (burnoutScore >= 8) {
-      return `${dateStr}Your burnout is severe and your financial margin is tight. That\u2019s the hardest combination. The instinct to flee is real, but a forced exit makes everything harder. Build toward your ${targetStr} target first.`;
+    if (runway >= 12) {
+      return `${dateStr}With a safety net backing you, you have more room than the raw number suggests. Use this time to get clearer on what you actually want.`;
     }
-    return `${dateStr}You need more runway before any exit makes sense. Focus on closing the ${gapStr} gap to reach ${targetStr}.`;
+    return `${dateStr}You\u2019re still exploring, and that\u2019s fine. Focus on building toward ${targetStr} while you clarify what comes next.`;
   }
 
-  // Moderate Pressure
+  // Preparing
   if (safeQuitDate && monthlySurplus > 0) {
     return `${dateStr}You have a window, but not an open one. At $${Math.round(monthlySurplus).toLocaleString()}/month in savings, you close the ${gapStr} gap by ${safeQuitDate}. That\u2019s your target.`;
   }
@@ -688,7 +654,9 @@ function getChecklist(
   hasHealthCoverage: boolean,
   parsedUnemployment: number,
   parsedPartnerIncome: number,
-  burnoutDriver: BurnoutDriver
+  primaryGap: PrimaryGap,
+  exitPathway: ExitPathway,
+  q3Support: ClarityAnswer
 ): string[] {
   const items: string[] = [];
   const surplus = Math.max(0, monthlySurplus);
@@ -698,55 +666,60 @@ function getChecklist(
   if (path === "Consider taking a break or quitting") {
     items.push(`Move $${Math.round(totalCash).toLocaleString()} into a dedicated "runway account." Separate it from investments and daily spending.`);
     if (!hasHealthCoverage) {
-      items.push("Research health coverage: COBRA (~$600/mo) vs. marketplace ($400–$550/mo). Budget for this starting day one.");
+      items.push("Research health coverage: COBRA (~$600/mo) vs. marketplace ($400\u2013$550/mo). Budget for this starting day one.");
     }
     if (parsedUnemployment > 0) {
-      items.push(`File for unemployment benefits immediately after your last day. That's ~$${Math.round(parsedUnemployment).toLocaleString()}/month for up to 6 months.`);
+      items.push(`File for unemployment benefits immediately after your last day. That\u2019s ~$${Math.round(parsedUnemployment).toLocaleString()}/month for up to 6 months.`);
     } else {
-      items.push("Check your state's unemployment eligibility. Most professionals qualify for $1,500–$2,500/month for 6 months.");
+      items.push("Check your state\u2019s unemployment eligibility. Most professionals qualify for $1,500\u2013$2,500/month for 6 months.");
+    }
+    if (primaryGap === "next-step clarity") {
+      items.push("Draft a 90-day plan for what you\u2019ll do after leaving. Structure prevents drift.");
     }
     items.push("Set a \u201Cdecision check-in\u201D date 90 days out. Put it in your calendar now. Revisit this plan then.");
-    if (parsedPartnerIncome > 0) {
+    if (q3Support === "No") {
+      items.push("Find a sounding board before you finalize anything \u2014 a coach, mentor, or trusted friend outside your company.");
+    } else if (parsedPartnerIncome > 0) {
       items.push("Have the money conversation with your partner: share this plan, your runway number, and your timeline.");
     } else {
-      items.push("Tell one person you trust about your plan and your timeline. Not for advice — for accountability.");
+      items.push("Tell one person you trust about your plan and your timeline. Not for advice \u2014 for accountability.");
     }
   } else if (path === "Build more runway before quitting") {
     if (surplus > 0) {
       items.push(`Set up auto-transfer: $${autoTransfer.toLocaleString()}/month to a separate savings account. ${safeQuitDate ? `This gets you to your target by ${safeQuitDate}.` : "Every month counts."}`);
     }
-    items.push(`Your target is $${Math.round(savingsTarget).toLocaleString()} (12 months of expenses). You're $${Math.round(gap).toLocaleString()} away.`);
-    items.push("Audit subscriptions and recurring charges this week. Most people find $200–$400/month they forgot about.");
+    items.push(`Your target is $${Math.round(savingsTarget).toLocaleString()} (12 months of expenses). You\u2019re $${Math.round(gap).toLocaleString()} away.`);
+    items.push("Audit subscriptions and recurring charges this week. Most people find $200\u2013$400/month they forgot about.");
     if (!hasHealthCoverage) {
-      items.push("Start researching health coverage options now. Budget $400–$600/month in your post-exit expenses.");
+      items.push("Start researching health coverage options now. Budget $400\u2013$600/month in your post-exit expenses.");
     }
-    if (burnoutDriver === "Toxic culture" || burnoutDriver === "Workload / hours") {
-      items.push("While you build runway, protect your energy: set one firm boundary this week and hold it.");
+    if (primaryGap === "next-step clarity") {
+      items.push("While you build runway, start exploring what comes next. Informational conversations cost nothing and compound.");
     }
-    items.push(`Set a calendar reminder to revisit this plan in 30 days. ${safeQuitDate ? `Your safe quit date is ${safeQuitDate} — track against it.` : "Track your savings progress."}`);
+    items.push(`Set a calendar reminder to revisit this plan in 30 days. ${safeQuitDate ? `Your safe quit date is ${safeQuitDate} \u2014 track against it.` : "Track your savings progress."}`);
   } else if (path === "Search while employed") {
-    items.push("Update your resume and LinkedIn this week. Not tomorrow — this week.");
+    items.push("Update your resume and LinkedIn this week. Not tomorrow \u2014 this week.");
     if (surplus > 0) {
       items.push(`Keep saving: $${autoTransfer.toLocaleString()}/month auto-transfer while you search. ${safeQuitDate ? `You hit 12-month safety by ${safeQuitDate}.` : ""}`);
     }
-    items.push("Reach out to 3 people in roles or companies you're curious about. Ask what they'd change about their job.");
+    items.push("Reach out to 3 people in roles or companies you\u2019re curious about. Ask what they\u2019d change about their job.");
     if (!hasHealthCoverage) {
-      items.push("Don't accept an offer without comparing health coverage. Budget $400–$600/month if you'll have a gap.");
+      items.push("Don\u2019t accept an offer without comparing health coverage. Budget $400\u2013$600/month if you\u2019ll have a gap.");
     }
     items.push("Set a search deadline: if nothing promising in 90 days, reassess whether the issue is the market or the target.");
     if (parsedSeverance > 0) {
-      items.push(`Your severance of $${Math.round(parsedSeverance).toLocaleString()} gives you extra cushion. Factor it in, but don't count on it until it's confirmed in writing.`);
+      items.push(`Your severance of $${Math.round(parsedSeverance).toLocaleString()} gives you extra cushion. Factor it in, but don\u2019t count on it until it\u2019s confirmed in writing.`);
     }
   } else {
     // Stay and improve
     items.push("Write down the 3 specific things that would need to change for you to feel good about staying 12 more months.");
-    items.push("Share those 3 things with your manager within 2 weeks. If you can't, that tells you something.");
+    items.push("Share those 3 things with your manager within 2 weeks. If you can\u2019t, that tells you something.");
     if (surplus > 0) {
       items.push(`Keep building runway: $${autoTransfer.toLocaleString()}/month auto-transfer. Options feel different when you have 12 months of savings.`);
     }
     items.push("Set a 90-day check-in: if nothing has improved by then, switch to an active search.");
-    if (burnoutDriver === "Compensation mismatch") {
-      items.push("Get your market number this week: levels.fyi, Glassdoor, or ask peers directly. Data changes negotiations.");
+    if (primaryGap === "financial clarity") {
+      items.push("Build a real budget this week. The number you need to feel safe is probably lower than you think.");
     }
   }
 
@@ -759,16 +732,18 @@ export default function Home() {
   const [severance, setSeverance] = React.useState<number | "">("");
   const [income, setIncome] = React.useState<number | "">("");
   const [age, setAge] = React.useState<number | "">("");
-  const [burnoutDriver, setBurnoutDriver] = React.useState<BurnoutDriver>("Not sure");
+  const [q1NextStep, setQ1NextStep] = React.useState<ClarityAnswer>("No");
+  const [q2Financial, setQ2Financial] = React.useState<ClarityAnswer>("No");
+  const [q3Support, setQ3Support] = React.useState<ClarityAnswer>("No");
+  const [q4Values, setQ4Values] = React.useState<ClarityAnswer>("No");
+  const [exitTrigger, setExitTrigger] = React.useState<ExitTrigger>("");
   const [partnerIncome, setPartnerIncome] = React.useState<number | "">("");
   const [familySupport, setFamilySupport] = React.useState<number | "">("");
   const [unemploymentBenefits, setUnemploymentBenefits] = React.useState<number | "">("");
   const [netWorth, setNetWorth] = React.useState<number | "">("");
   const [hasHealthCoverage, setHasHealthCoverage] = React.useState(true);
   const [debtPayments, setDebtPayments] = React.useState<number | "">("");
-  const [burnout, setBurnout] = React.useState(5);
-  const [satisfaction, setSatisfaction] = React.useState(5);
-  const [growth, setGrowth] = React.useState(5);
+  const [taxRate, setTaxRate] = React.useState(30); // effective tax rate on severance + unemployment
   const [gateEmail, setGateEmail] = React.useState("");
   const [gateUnlocked, setGateUnlocked] = React.useState(false);
   const [gateSubmitting, setGateSubmitting] = React.useState(false);
@@ -780,9 +755,14 @@ export default function Home() {
   const parsedPartnerIncome = typeof partnerIncome === "number" ? partnerIncome : parseFloat(partnerIncome || "0");
   const parsedFamilySupport = typeof familySupport === "number" ? familySupport : parseFloat(familySupport || "0");
   const parsedWeeklyUnemployment = typeof unemploymentBenefits === "number" ? unemploymentBenefits : parseFloat(unemploymentBenefits || "0");
-  const parsedUnemployment = parsedWeeklyUnemployment * 4.33; // weekly → monthly
+  const parsedUnemploymentGross = parsedWeeklyUnemployment * 4.33; // weekly → monthly (gross)
   const parsedNetWorth = typeof netWorth === "number" ? netWorth : parseFloat(netWorth || "0");
   const parsedDebtPayments = typeof debtPayments === "number" ? debtPayments : parseFloat(debtPayments || "0");
+
+  // Apply tax rate to severance and unemployment (both are taxable income)
+  const taxMultiplier = 1 - taxRate / 100;
+  const afterTaxSeverance = parsedSeverance * taxMultiplier;
+  const parsedUnemployment = parsedUnemploymentGross * taxMultiplier; // after-tax monthly
 
   const effectiveExpenses = parsedExpenses + parsedDebtPayments;
 
@@ -793,7 +773,7 @@ export default function Home() {
   const phase2Expenses = Math.max(0, effectiveExpenses - ongoingSafetyNet); // after unemployment ends
 
   // Runway accounts for unemployment benefits lasting only 6 months
-  const totalCash = parsedSavings + parsedSeverance;
+  const totalCash = parsedSavings + afterTaxSeverance;
   const runway = (() => {
     if (parsedExpenses <= 0) return 0;
     // Phase 1: with unemployment (up to 6 months)
@@ -868,31 +848,29 @@ export default function Home() {
     return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   })();
 
-  const burnoutScore =
-    (burnout + (10 - satisfaction) + (10 - growth)) / 3;
+  // Decision matrix derived values
+  const readinessStage = getReadinessStage(q1NextStep, q2Financial, q3Support, q4Values);
+  const decisionClarityLevel = getDecisionClarityLevel(q1NextStep, q2Financial);
+  const primaryGap = getPrimaryGap(q1NextStep, q2Financial, q3Support, q4Values);
+  const exitPathway = getExitPathway(exitTrigger);
+  const decisionMatrixRead = getDecisionMatrixRead(q1NextStep, q2Financial, q3Support, q4Values, exitPathway);
 
   const financialRisk = getFinancialRisk(runway);
-  const burnoutLevel = getBurnoutLevel(burnoutScore);
-  const archetype = getArchetype(burnoutScore, satisfaction, growth, runway, financialRisk);
-  const careerHealthScore = satisfaction + growth - burnout;
-  const careerHealthLabel = getCareerHealthLabel(careerHealthScore);
-  const recommendedPath = getRecommendedPath(financialRisk, burnoutLevel, runway);
+  const recommendedPath = getRecommendedPath(financialRisk, readinessStage, exitPathway, runway, q4Values);
   const headline = getHeadline(recommendedPath);
   const situationSummary = getSituationSummary(
     runway,
-    burnoutScore,
     financialRisk,
-    burnoutLevel,
     recommendedPath,
-    archetype
+    readinessStage,
+    primaryGap
   );
-  const yourMove = getYourMove(recommendedPath, burnoutDriver, runway, satisfaction, growth, parsedIncome, parsedExpenses);
-  const needleMovers = getWhatMovesTheNeedle(runway, effectiveExpenses, parsedIncome, parsedSeverance, parsedPartnerIncome, hasHealthCoverage, adjustedRunway, runwayStay3, runwayStay6, safeQuitDate);
-  const burnoutDriverInsight = getBurnoutDriverInsight(burnoutDriver);
+  const yourMove = getYourMove(recommendedPath, primaryGap, exitPathway, runway, parsedIncome, parsedExpenses, q3Support);
+  const needleMovers = getWhatMovesTheNeedle(runway, effectiveExpenses, parsedIncome, afterTaxSeverance, parsedPartnerIncome, hasHealthCoverage, adjustedRunway, runwayStay3, runwayStay6, safeQuitDate);
+
   // Field-count confidence score
   const optionalFieldLabels: { filled: boolean; label: string }[] = [
-    { filled: growth !== 5, label: "growth trajectory" },
-    { filled: burnoutDriver !== "Not sure", label: "burnout driver" },
+    { filled: exitTrigger !== "", label: "exit trigger" },
     { filled: age !== "", label: "age" },
     { filled: parsedSeverance > 0 || severance !== "", label: "severance" },
     { filled: parsedNetWorth > 0 || netWorth !== "", label: "net worth" },
@@ -905,7 +883,7 @@ export default function Home() {
   const filledCount = optionalFieldLabels.filter((f) => f.filled).length;
   const totalOptional = optionalFieldLabels.length;
   const fieldConfidence: "High" | "Medium" | "Low" =
-    filledCount >= 7 ? "High" : filledCount >= 4 ? "Medium" : "Low";
+    filledCount >= 6 ? "High" : filledCount >= 3 ? "Medium" : "Low";
   const missingFieldLabels = optionalFieldLabels.filter((f) => !f.filled).map((f) => f.label);
   const confidenceExplanation = `Based on ${filledCount} of ${totalOptional} optional fields.${
     missingFieldLabels.length > 0
@@ -913,19 +891,10 @@ export default function Home() {
       : ""
   }`;
 
-  // Keep old decision confidence for internal use
-  const decisionConfidence = getDecisionConfidence(
-    archetype,
-    financialRisk,
-    burnoutLevel,
-    recommendedPath,
-    runway
-  );
   const normalizationParagraph = getNormalizationParagraph(age);
   const careerTimingPerspective = getCareerTimingPerspective(age);
 
   const whyParts: string[] = [situationSummary];
-  if (burnoutDriverInsight) whyParts.push(burnoutDriverInsight);
   if (careerTimingPerspective) whyParts.push(careerTimingPerspective);
   const whyParagraph = whyParts.join(" ");
 
@@ -934,7 +903,6 @@ export default function Home() {
   const hasSafetyNet = parsedPartnerIncome > 0 || parsedFamilySupport > 0 || parsedUnemployment > 0;
   const readinessTier: ReadinessTier = (() => {
     if (runway >= 12 || (runway >= 9 && hasSafetyNet)) return "Clear to Go";
-    if (runway >= 6 && burnout >= 7) return "Prepare to Leave";
     if (runway >= 6) return "Prepare to Leave";
     return "Build More Runway";
   })();
@@ -952,27 +920,29 @@ export default function Home() {
   // Risk flags + strengths
   const strengths: string[] = [];
   const riskFlags: string[] = [];
-  if (runway > 9) strengths.push(`You have ${runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months`} of runway — more than most people who make this transition.`);
+  if (runway > 9) strengths.push(`You have ${runway >= 999 ? "full coverage" : `${runway.toFixed(1)} months`} of runway \u2014 more than most people who make this transition.`);
   if (parsedPartnerIncome > 0) strengths.push("Partner income provides a financial safety net during your transition.");
-  if (monthlySurplus > 1000) strengths.push("Your savings rate is strong — every month you stay adds meaningfully to your runway.");
-  if (parsedSeverance > 0) strengths.push(`Expected severance of $${Math.round(parsedSeverance).toLocaleString()} extends your effective runway.`);
+  if (monthlySurplus > 1000) strengths.push("Your savings rate is strong \u2014 every month you stay adds meaningfully to your runway.");
+  if (parsedSeverance > 0) strengths.push(`Expected severance of $${Math.round(afterTaxSeverance).toLocaleString()} after taxes extends your effective runway.`);
+  if (q1NextStep === "Yes") strengths.push("You have a clear picture of what comes next \u2014 that\u2019s a significant advantage most people don\u2019t have at this stage.");
+  if (q3Support === "Yes") strengths.push("You have someone to talk this through with. That support meaningfully improves decision quality.");
   if (runway < 4 && runway > 0) riskFlags.push("Less than 4 months of runway creates significant pressure to accept the first opportunity available.");
-  if (burnout >= 8 && runway < 6 && runway > 0) riskFlags.push("High burnout combined with a short runway is the highest-risk combination. Decisions made under this pressure are often regretted.");
+  if (exitPathway === "imposed timeline" && runway < 6 && runway > 0) riskFlags.push("An imposed timeline combined with a short runway is high-risk. Prioritize income replacement over optimization.");
+  if (q3Support === "No") riskFlags.push("You\u2019re making this decision without a sounding board. Decisions made in isolation tend to have blind spots.");
   if (parsedPartnerIncome === 0 && parsedFamilySupport === 0) riskFlags.push("Your runway is entirely self-funded. There\u2019s no external safety net factored in.");
-  if (!hasHealthCoverage) riskFlags.push("You'll need marketplace health coverage, which typically costs $400–600/month and isn't factored into most people's initial estimates.");
-  if (parsedIncome > 0 && parsedExpenses > 0 && parsedIncome <= parsedExpenses) riskFlags.push("You're currently spending more than you earn — your runway is actively shrinking.");
+  if (!hasHealthCoverage) riskFlags.push("You\u2019ll need marketplace health coverage, which typically costs $400\u2013600/month and isn\u2019t factored into most people\u2019s initial estimates.");
+  if (parsedIncome > 0 && parsedExpenses > 0 && parsedIncome <= parsedExpenses) riskFlags.push("You\u2019re currently spending more than you earn \u2014 your runway is actively shrinking.");
 
   const readinessTierColor =
     readinessTier === "Clear to Go" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
     readinessTier === "Prepare to Leave" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
     "border-rose-700/50 bg-rose-900/30 text-rose-300";
 
-  const pressureState = getPressureState(runway, burnoutScore, monthlySurplus, hasSafetyNet);
-  const bestMove = getBestMove(pressureState, recommendedPath, burnoutScore, runway);
+  const bestMove = getBestMove(readinessStage, recommendedPath, exitPathway, runway);
 
-  const pressureColor =
-    pressureState === "Low Pressure" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
-    pressureState === "Moderate Pressure" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
+  const stageColor =
+    readinessStage === "Ready to Act" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-300" :
+    readinessStage === "Preparing" ? "border-amber-700/50 bg-amber-900/30 text-amber-300" :
     "border-rose-700/50 bg-rose-900/30 text-rose-300";
 
   // Option comparison: leave now vs stay 3 vs stay 6
@@ -1010,9 +980,9 @@ export default function Home() {
     { key: "stay6", label: "Stay 6 months", runway: runwayStay6, risk: riskForRunway(runwayStay6), tradeoff: tradeoffForOption("stay6", runwayStay6), recommended: recommendedOption === "stay6" },
   ];
 
-  const realityCheck = getRealityCheck(archetype, careerHealthLabel, financialRisk, burnoutDriver);
+  const realityCheck = getRealityCheck(readinessStage, primaryGap, exitPathway, financialRisk, q4Values);
 
-  const coreTension = getCoreTension(archetype, burnoutDriver, financialRisk, runway, burnoutScore);
+  const coreTension = getCoreTension(readinessStage, primaryGap, exitPathway, financialRisk, runway, q4Values, q1NextStep);
 
   const moneyRunsOutDate = getMoneyRunsOutDate(runway);
   const { floorRunway, floorDate, adjustments: floorAdjustments } = getFloorRunway(
@@ -1032,11 +1002,10 @@ export default function Home() {
     safeQuitDate,
     monthlySurplus,
     totalCash,
-    readinessTier,
     runwayStay3,
-    burnoutScore,
     moneyRunsOutDate,
-    pressureState
+    readinessStage,
+    exitPathway
   );
 
   const checklist = getChecklist(
@@ -1047,11 +1016,13 @@ export default function Home() {
     totalCash,
     savingsTarget,
     safeQuitDate,
-    parsedSeverance,
+    afterTaxSeverance,
     hasHealthCoverage,
     parsedUnemployment,
     parsedPartnerIncome,
-    burnoutDriver
+    primaryGap,
+    exitPathway,
+    q3Support
   );
 
   const hasFinancialInputs = effectiveExpenses > 0;
@@ -1060,30 +1031,20 @@ export default function Home() {
   const [copied, setCopied] = React.useState(false);
 
   const handleShareProfile = async () => {
-    const profileLabel =
-      archetype === "None" ? "No clear single profile" : archetype;
-
     const runwayText =
       runway && Number.isFinite(runway)
         ? `${runway.toFixed(1)} months of runway`
         : "runway not yet calculated";
 
     const totalCashText = totalCash > 0
-      ? `$${Math.round(totalCash).toLocaleString()} total cash (savings${parsedSeverance > 0 ? ` + $${Math.round(parsedSeverance).toLocaleString()} severance` : ""})`
-      : null;
-
-    const netWorthText = parsedNetWorth > 0
-      ? `Net worth: $${Math.round(parsedNetWorth).toLocaleString()}`
+      ? `$${Math.round(totalCash).toLocaleString()} total cash (savings${parsedSeverance > 0 ? ` + $${Math.round(afterTaxSeverance).toLocaleString()} severance after tax` : ""})`
       : null;
 
     const shareLines = [
       "My Runway Assessment:",
-      profileLabel,
-      `Career health: ${careerHealthLabel}`,
+      `Stage: ${readinessStage}`,
       `Runway: ${runwayText}`,
       ...(totalCashText ? [`Est. cash available: ${totalCashText}`] : []),
-      ...(netWorthText ? [netWorthText] : []),
-      `Burnout: ${burnoutScore.toFixed(1)}/10`,
       `Recommended next move: ${recommendedPath}`,
     ];
 
@@ -1106,55 +1067,15 @@ export default function Home() {
     }
     setGateSubmitting(true);
     setGateError("");
-    try {
-      // Fire-and-forget: attempt capture but always unlock
-      fetch("/api/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: gateEmail,
-          pressureState,
-          runway: runway >= 999 ? "covered" : runway.toFixed(1),
-          archetype,
-        }),
-      }).catch(() => {});
-      setGateUnlocked(true);
-    } catch {
-      // Unlock even if something unexpected happens
-      setGateUnlocked(true);
-    } finally {
-      setGateSubmitting(false);
-    }
+    // Email capture disabled for preview — just unlock
+    setGateUnlocked(true);
+    setGateSubmitting(false);
   };
-
-  // Split core tension: first sentence bold, rest lighter
-  const coreTensionParts = (() => {
-    const idx = coreTension.indexOf(". ");
-    if (idx === -1) return { lead: coreTension, rest: "" };
-    return { lead: coreTension.slice(0, idx + 1), rest: coreTension.slice(idx + 2) };
-  })();
 
   // Collapsible section state
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  // Live read based on slider combination
-  const sliderRead = (() => {
-    const highBurnout = burnout >= 7;
-    const lowBurnout = burnout <= 3;
-    const highSat = satisfaction >= 7;
-    const lowSat = satisfaction <= 3;
-
-    if (highBurnout && lowSat) return "That's a rough combination. Let's see if the money works.";
-    if (highBurnout && highSat) return "Burned out but you like what you do. That changes things.";
-    if (highBurnout) return "Your burnout is high. The financial picture will matter a lot.";
-    if (lowBurnout && lowSat) return "Not burned out, but not happy either. Worth exploring why.";
-    if (lowBurnout && highSat) return "You're in a good spot. What brought you here?";
-    if (lowSat) return "Low satisfaction is a slow drain. Let's see what your options look like.";
-    if (burnout >= 5 && satisfaction <= 4) return "Something's off. Let's figure out how much room you have to move.";
-    return null;
-  })();
 
   const inputClass = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-8 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
   const inputClassNoDollar = "w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm text-white placeholder-slate-400 outline-none ring-0 transition focus:border-slate-400 focus:bg-slate-700";
@@ -1185,73 +1106,115 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Runway Planner</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Decision Tool</p>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-400">
-            You already know something needs to change. This tool helps you see whether the money supports the move — and what to do next.
+            A structured assessment of your financial readiness to leave — and a concrete plan for what to do next.
           </p>
           <p className="mt-2 text-xs text-slate-500">
-            No account required. Your data stays in your browser.
+            No account required. Nothing stored. Your data stays in your browser.
           </p>
         </header>
 
-        {/* ── Card 1: How you're feeling ── */}
+        {/* ── Card 1: Where you are in this decision ── */}
         <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium text-slate-200">
-              How burned out are you?{" "}
-              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
-                {burnout}/10
-              </span>
-            </p>
-            <input type="range" min={1} max={10} value={burnout}
-              onChange={(e) => setBurnout(Number(e.target.value))}
-              className="w-full accent-slate-400" />
-            <p className="text-xs text-slate-400">1 = deeply rested, 10 = completely depleted</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Where you are in this decision</p>
+            <p className="mt-1.5 text-xs text-slate-400">Five questions to ground the analysis in your actual situation.</p>
           </div>
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium text-slate-200">
-              How do you feel about your job?{" "}
-              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
-                {satisfaction}/10
-              </span>
-            </p>
-            <input type="range" min={1} max={10} value={satisfaction}
-              onChange={(e) => setSatisfaction(Number(e.target.value))}
-              className="w-full accent-slate-400" />
-            <p className="text-xs text-slate-400">1 = actively miserable, 10 = genuinely fulfilled</p>
+
+          {/* Q1 — Next step clarity */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-200">I know what I would do next if I left.</p>
+            <div className="flex gap-2">
+              {(["Yes", "Somewhat", "No"] as ClarityAnswer[]).map((opt) => (
+                <button key={opt} type="button" onClick={() => setQ1NextStep(opt)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    q1NextStep === opt
+                      ? "border-white bg-white/10 text-white"
+                      : "border-slate-600 bg-slate-700/30 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+                  }`}>
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
-          {sliderRead && (
-            <p className="mt-1 text-center text-sm italic text-slate-400">{sliderRead}</p>
-          )}
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium text-slate-200">
-              Are you still learning and growing?{" "}
-              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[11px] text-slate-200">
-                {growth}/10
-              </span>
-            </p>
-            <input type="range" min={1} max={10} value={growth}
-              onChange={(e) => setGrowth(Number(e.target.value))}
-              className="w-full accent-slate-400" />
-            <p className="text-xs text-slate-400">1 = completely stalled, 10 = accelerating</p>
+
+          {/* Q2 — Financial confidence */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-200">I have a clear picture of how long my money would last.</p>
+            <div className="flex gap-2">
+              {(["Yes", "Somewhat", "No"] as ClarityAnswer[]).map((opt) => (
+                <button key={opt} type="button" onClick={() => setQ2Financial(opt)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    q2Financial === opt
+                      ? "border-white bg-white/10 text-white"
+                      : "border-slate-600 bg-slate-700/30 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+                  }`}>
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-200">What's wearing you down most?</label>
-            <select value={burnoutDriver}
-              onChange={(e) => setBurnoutDriver(e.target.value as BurnoutDriver)}
+
+          {/* Q3 — Support */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-200">I have someone I trust to talk this through with.</p>
+            <div className="flex gap-2">
+              {(["Yes", "Somewhat", "No"] as ClarityAnswer[]).map((opt) => (
+                <button key={opt} type="button" onClick={() => setQ3Support(opt)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    q3Support === opt
+                      ? "border-white bg-white/10 text-white"
+                      : "border-slate-600 bg-slate-700/30 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+                  }`}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Q4 — Values alignment */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-200">Staying in this job is costing me something important.</p>
+            <div className="flex gap-2">
+              {(["Yes", "Somewhat", "No"] as ClarityAnswer[]).map((opt) => (
+                <button key={opt} type="button" onClick={() => setQ4Values(opt)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    q4Values === opt
+                      ? "border-white bg-white/10 text-white"
+                      : "border-slate-600 bg-slate-700/30 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+                  }`}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Q5 — Exit trigger */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-200">What prompted you to look at this today?</p>
+            <select value={exitTrigger}
+              onChange={(e) => setExitTrigger(e.target.value as ExitTrigger)}
               className={inputClassNoDollar}>
-              <option value="Not sure">Not sure yet</option>
-              <option value="Workload / hours">Workload / hours</option>
-              <option value="Lack of meaning">Lack of meaning</option>
-              <option value="Toxic culture">Toxic culture</option>
-              <option value="Lack of growth">Lack of growth</option>
-              <option value="Compensation mismatch">Compensation mismatch</option>
+              <option value="">Select one</option>
+              <option value="Laid off or given notice">I was laid off or given notice</option>
+              <option value="Actively miserable">I{"\u2019"}m actively miserable</option>
+              <option value="Pursuing an opportunity">I have an opportunity I want to pursue</option>
+              <option value="Just exploring">I{"\u2019"}m just exploring</option>
+              <option value="Something specific happened">Something specific happened recently</option>
             </select>
           </div>
+
+          {/* Dynamic read */}
+          <p className="mt-1 text-center text-sm italic text-slate-400">{decisionMatrixRead}</p>
         </section>
 
         {/* ── Card 2: Your financial picture ── */}
         <section className="space-y-5 rounded-2xl bg-slate-800 p-5 sm:p-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Your financial picture</p>
+            <p className="mt-1.5 text-xs text-slate-400">Monthly after-tax numbers. These drive your runway calculation.</p>
+          </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-slate-200">Liquid savings you could live on</label>
@@ -1297,7 +1260,7 @@ export default function Home() {
 
         {/* ── Empty state ── */}
         {!hasFinancialInputs && (
-          <p className="py-4 text-center text-sm text-slate-500">Add your financial details above to see your assessment.</p>
+          <p className="py-4 text-center text-sm text-slate-500">Enter your financial details above to generate your assessment.</p>
         )}
 
         {/* ── Sharpen the picture (progressive disclosure) ── */}
@@ -1318,13 +1281,16 @@ export default function Home() {
                   className={inputClassNoDollar} placeholder="Your age" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-200">Expected severance</label>
+                <label className="block text-sm font-medium text-slate-200">Expected severance (gross)</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                   <input type="number" min={0} value={severance}
                     onChange={(e) => setSeverance(e.target.value === "" ? "" : Number(e.target.value))}
                     className={inputClass} placeholder="0" />
                 </div>
+                {parsedSeverance > 0 && (
+                  <p className="text-xs text-slate-400">After {taxRate}% tax: <span className="text-slate-300">${Math.round(afterTaxSeverance).toLocaleString()}</span></p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-200">Total net worth</label>
@@ -1337,6 +1303,26 @@ export default function Home() {
                 <p className="text-xs text-slate-400">Investments, retirement accounts, equity, and other assets beyond cash savings.</p>
               </div>
             </div>
+
+            {/* Effective tax rate */}
+            {(parsedSeverance > 0 || parsedWeeklyUnemployment > 0) && (
+              <div className="space-y-2 rounded-xl border border-slate-600 bg-slate-700/30 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-200">Estimated tax rate on severance &amp; unemployment</p>
+                    <p className="text-xs text-slate-400">Federal + state. Severance is taxed as supplemental income; unemployment is taxed as ordinary income.</p>
+                  </div>
+                  <span className="rounded-full bg-slate-600 px-2.5 py-0.5 text-xs font-bold text-slate-200">{taxRate}%</span>
+                </div>
+                <input type="range" min={0} max={50} value={taxRate}
+                  onChange={(e) => setTaxRate(Number(e.target.value))}
+                  className="w-full accent-slate-400" />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>0% (no tax)</span>
+                  <span>50%</span>
+                </div>
+              </div>
+            )}
 
             {/* Health insurance toggle */}
             <div className="flex items-center justify-between rounded-xl border border-slate-600 bg-slate-700/30 px-4 py-3">
@@ -1384,14 +1370,14 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-slate-300">Unemployment benefits</label>
+                  <label className="block text-xs font-medium text-slate-300">Unemployment benefits (gross)</label>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">$</span>
                     <input type="number" min={0} value={unemploymentBenefits}
                       onChange={(e) => setUnemploymentBenefits(e.target.value === "" ? "" : Number(e.target.value))}
                       className={inputClass} placeholder="e.g. 450" />
                   </div>
-                  <p className="text-[10px] text-slate-500">Weekly amount, typically $300–$600. Leave blank if unsure.</p>
+                  <p className="text-[10px] text-slate-500">Weekly gross amount, typically $300–$600. Taxed at your rate above.</p>
                 </div>
               </div>
             </details>
@@ -1415,7 +1401,7 @@ export default function Home() {
                   const planText = [
                     `RUNWAY PLAN — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
                     "",
-                    `${pressureState} · ${bestMove}`,
+                    `${readinessStage} · ${bestMove}`,
                     runwayLine,
                     `12-month target: $${Math.round(savingsTarget).toLocaleString()}`,
                     savingsGap > 0 ? `Gap to close: $${Math.round(savingsGap).toLocaleString()}` : "Target reached",
@@ -1451,7 +1437,7 @@ export default function Home() {
             {/* ── 1. THE BOTTOM LINE ── */}
             <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
               <div className="flex items-center gap-3">
-                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${pressureColor}`}>{pressureState}</span>
+                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${stageColor}`}>{readinessStage}</span>
               </div>
 
               {/* Best next move */}
@@ -1551,9 +1537,9 @@ export default function Home() {
             {/* ── 4. EMAIL GATE — gates safe quit date, floor, checklist ── */}
             {!gateUnlocked ? (
               <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 sm:p-7">
-                <p className="text-sm font-semibold text-white">Unlock your full Runway Plan.</p>
+                <p className="text-sm font-semibold text-white">See the full assessment.</p>
                 <p className="mt-1.5 text-xs text-slate-400">
-                  Your safe quit date, worst-case floor, personalized 30-day checklist, and risk analysis — based on your numbers.
+                  Your safe quit date, worst-case stress test, personalized 30-day action plan, and risk profile — all calculated from your inputs.
                 </p>
                 <form onSubmit={handleGateSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
@@ -1568,11 +1554,11 @@ export default function Home() {
                     disabled={gateSubmitting}
                     className="whitespace-nowrap rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
                   >
-                    {gateSubmitting ? "Sending..." : "Unlock your plan"}
+                    {gateSubmitting ? "Loading..." : "Continue"}
                   </button>
                 </form>
                 {gateError && <p className="mt-2 text-xs text-rose-400">{gateError}</p>}
-                <p className="mt-3 text-[11px] text-slate-500">No spam. Just your plan.</p>
+                <p className="mt-3 text-[11px] text-slate-500">Enter any email to continue. Nothing is stored or sent.</p>
               </div>
             ) : (
               <>
@@ -1690,24 +1676,21 @@ export default function Home() {
                 )}
 
                 {/* ── 9. THE DEEPER PICTURE — collapsed ── */}
-                {archetype !== "None" && (
-                  <div className="rounded-xl bg-slate-800">
-                    <button type="button" onClick={() => toggleSection("deeper")}
-                      className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
-                      The deeper picture
-                      <svg className={`h-4 w-4 text-slate-400 transition ${openSections["deeper"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    {openSections["deeper"] && (
-                      <div className="px-5 pb-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{archetype}</p>
-                        <p className="mt-2 text-sm leading-relaxed">
-                          <span className="font-medium text-white">{coreTensionParts.lead}</span>
-                          {coreTensionParts.rest && <span className="text-slate-400"> {coreTensionParts.rest}</span>}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="rounded-xl bg-slate-800">
+                  <button type="button" onClick={() => toggleSection("deeper")}
+                    className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
+                    The deeper picture
+                    <svg className={`h-4 w-4 text-slate-400 transition ${openSections["deeper"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                  {openSections["deeper"] && (
+                    <div className="px-5 pb-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">What you{"\u2019"}re really deciding</p>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                        {coreTension}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* ── 10. ASSUMPTIONS & LIMITS — collapsed ── */}
                 <div className="rounded-xl bg-slate-800">
@@ -1728,7 +1711,7 @@ export default function Home() {
 
             {/* Disclaimer */}
             <p className="text-center text-[11px] leading-relaxed text-slate-500">
-              This is a decision aid, not financial or career advice.
+              This is a decision-support tool, not financial or career advice. Consult a qualified professional before making major financial decisions.
             </p>
           </section>
         )}
