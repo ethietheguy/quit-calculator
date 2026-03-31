@@ -1067,7 +1067,21 @@ export default function Home() {
     }
     setGateSubmitting(true);
     setGateError("");
-    // Email capture disabled for preview — just unlock
+    try {
+      const res = await fetch("/api/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: gateEmail.trim().toLowerCase(),
+          readinessTier,
+          runway: runway >= 999 ? "covered" : runway.toFixed(1),
+          recommendedPath,
+        }),
+      });
+      if (!res.ok) throw new Error("capture failed");
+    } catch {
+      // Capture failed silently — don't block the user
+    }
     setGateUnlocked(true);
     setGateSubmitting(false);
   };
@@ -1106,12 +1120,12 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Runway</h1>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Decision Tool</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Career Runway Planner</p>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-400">
-            See how much runway you actually have, what your risks are, and what to do next.
+            A structured assessment of your financial runway, your biggest risks, and the smartest move to make next.
           </p>
           <p className="mt-2 text-xs text-slate-500">
-            No account required. Nothing stored. Your data stays in your browser.
+            No account required. Your data stays in your browser.
           </p>
         </header>
 
@@ -1258,9 +1272,30 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── How this works — transparency builds trust ── */}
+        <details className="group rounded-2xl bg-slate-800/60">
+          <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-slate-400 sm:px-7">
+            <span className="inline-flex items-center gap-2">
+              How this assessment works
+              <svg className="h-4 w-4 text-slate-500 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </span>
+          </summary>
+          <div className="space-y-3 px-5 pb-5 text-xs leading-relaxed text-slate-400 sm:px-7">
+            <p>
+              Runway uses deterministic calculations — not AI, not a quiz algorithm. Your runway number is your liquid savings divided by your monthly burn rate, adjusted for unemployment benefits, safety net income, and health insurance costs.
+            </p>
+            <p>
+              Your readiness stage comes from how you answered the five clarity questions. Your recommended path combines your financial position with your decision clarity and exit circumstances. The 30-day plan is selected from a structured library based on your specific situation.
+            </p>
+            <p>
+              The more optional fields you complete, the more accurate the assessment. Nothing is stored on our servers unless you enter your email.
+            </p>
+          </div>
+        </details>
+
         {/* ── Empty state ── */}
         {!hasFinancialInputs && (
-          <p className="py-4 text-center text-sm text-slate-500">Enter your financial details above to generate your assessment.</p>
+          <p className="py-4 text-center text-sm text-slate-500">Fill in your numbers above to see your assessment.</p>
         )}
 
         {/* ── Sharpen the picture (progressive disclosure) ── */}
@@ -1388,18 +1423,18 @@ export default function Home() {
         {hasFinancialInputs && (
           <section className="space-y-4">
 
-            {/* ── PLAN HEADER WITH DATE + COPY ── */}
+            {/* ── ASSESSMENT HEADER WITH DATE + COPY ── */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway Plan</p>
-                <p className="text-[10px] text-slate-500">{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Your Runway Assessment</p>
+                <p className="text-[10px] text-slate-500">Generated {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
               </div>
               <button
                 type="button"
                 onClick={async () => {
                   const runwayLine = runway >= 999 ? "Runway: Fully covered" : `Runway: ${runway.toFixed(1)} months${moneyRunsOutDate ? ` (through ${moneyRunsOutDate})` : ""}`;
                   const planText = [
-                    `RUNWAY PLAN — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
+                    `RUNWAY ASSESSMENT — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
                     "",
                     `${readinessStage} · ${bestMove}`,
                     runwayLine,
@@ -1428,7 +1463,7 @@ export default function Home() {
                 ) : (
                   <>
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    Copy plan
+                    Copy results
                   </>
                 )}
               </button>
@@ -1476,6 +1511,18 @@ export default function Home() {
                   </p>
                 </div>
               </div>
+
+              {/* Show the math */}
+              {runway > 0 && runway < 999 && effectiveExpenses > 0 && (
+                <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                  <span className="font-medium text-slate-400">The math:</span>{" "}
+                  ${Math.round(totalCash).toLocaleString()} in savings{afterTaxSeverance > 0 ? ` (including $${Math.round(afterTaxSeverance).toLocaleString()} severance after tax)` : ""}
+                  {" ÷ "}${Math.round(effectiveExpenses).toLocaleString()}/mo in expenses
+                  {monthlySafetyNet > 0 ? ` (offset by $${Math.round(monthlySafetyNet).toLocaleString()}/mo safety net)` : ""}
+                  {" = "}{runway.toFixed(1)} months.
+                  {parsedUnemployment > 0 && ` Unemployment benefits ($${Math.round(parsedUnemployment).toLocaleString()}/mo after tax) included for first 6 months only.`}
+                </p>
+              )}
             </div>
 
             {/* ── 2. YOUR OPTIONS, COMPARED — always visible ── */}
@@ -1541,9 +1588,9 @@ export default function Home() {
             {/* ── 4. EMAIL GATE — gates safe quit date, floor, checklist ── */}
             {!gateUnlocked ? (
               <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 sm:p-7">
-                <p className="text-sm font-semibold text-white">See the full assessment.</p>
-                <p className="mt-1.5 text-xs text-slate-400">
-                  Your safe quit date, worst-case stress test, personalized 30-day action plan, and risk profile — all calculated from your inputs.
+                <p className="text-sm font-semibold text-white">Your full assessment is ready.</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+                  Includes your safe quit date, worst-case stress test, a personalized 30-day action plan, and your full risk profile — all calculated from your inputs.
                 </p>
                 <form onSubmit={handleGateSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
@@ -1558,11 +1605,11 @@ export default function Home() {
                     disabled={gateSubmitting}
                     className="whitespace-nowrap rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
                   >
-                    {gateSubmitting ? "Loading..." : "Continue"}
+                    {gateSubmitting ? "Unlocking..." : "See full assessment"}
                   </button>
                 </form>
                 {gateError && <p className="mt-2 text-xs text-rose-400">{gateError}</p>}
-                <p className="mt-3 text-[11px] text-slate-500">Enter any email to continue. Nothing is stored or sent.</p>
+                <p className="mt-3 text-[11px] text-slate-500">We{"\u2019"}ll send you a copy of your results. No spam, no sequences.</p>
               </div>
             ) : (
               <>
@@ -1635,9 +1682,9 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ── 7. YOUR 30-DAY CHECKLIST ── */}
+                {/* ── 7. YOUR 30-DAY ACTION PLAN ── */}
                 <div className="rounded-2xl bg-slate-800 p-5 sm:p-7">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your 30-day checklist</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your next 30 days</p>
                   <div className="mt-4 space-y-3">
                     {checklist.map((item, i) => (
                       <label key={i} className="flex gap-3 cursor-pointer group">
@@ -1679,16 +1726,16 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ── 9. THE DEEPER PICTURE — collapsed ── */}
+                {/* ── 9. THE REAL QUESTION — collapsed ── */}
                 <div className="rounded-xl bg-slate-800">
                   <button type="button" onClick={() => toggleSection("deeper")}
                     className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-medium text-slate-400">
-                    The deeper picture
+                    What you{"\u2019"}re really deciding
                     <svg className={`h-4 w-4 text-slate-400 transition ${openSections["deeper"] ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   {openSections["deeper"] && (
                     <div className="px-5 pb-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">What you{"\u2019"}re really deciding</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">The core tension</p>
                       <p className="mt-2 text-sm leading-relaxed text-slate-300">
                         {coreTension}
                       </p>
@@ -1715,7 +1762,7 @@ export default function Home() {
 
             {/* Disclaimer */}
             <p className="text-center text-[11px] leading-relaxed text-slate-500">
-              This is a decision-support tool, not financial or career advice. Consult a qualified professional before making major financial decisions.
+              Runway is a decision-support tool, not financial or career advice. Consult a qualified professional before making major life or financial decisions.
             </p>
           </section>
         )}

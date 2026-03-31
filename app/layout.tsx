@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Runway — Career Exit Readiness Assessment",
-  description: "A structured assessment of your financial runway, burnout risk, and smartest next move. Built for professionals who need clarity, not a quiz.",
+  title: "Runway — Career Runway Planner",
+  description: "See how much runway you have, what your risks are, and what to do next. A structured career exit assessment for professionals who need clarity, not a quiz.",
 };
 
 export default function RootLayout({

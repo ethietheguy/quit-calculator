@@ -4,7 +4,7 @@ import path from "path";
 
 export async function POST(request: Request) {
   try {
-    const { email, readinessTier, runway, archetype } = await request.json();
+    const { email, readinessTier, runway, recommendedPath } = await request.json();
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       email: email.trim().toLowerCase(),
       readinessTier: readinessTier || null,
       runway: runway || null,
-      archetype: archetype || null,
+      recommendedPath: recommendedPath || null,
       capturedAt: new Date().toISOString(),
     };
 
